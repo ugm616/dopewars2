@@ -51,8 +51,18 @@
                 </div>
                 
                 <div id="events-panel">
-                    <h2>Events:</h2>
-                    <div id="events-log"></div>
+                    <div class="events-tabs">
+                        <button class="tab-button active" data-tab="drug-news">Drug News</button>
+                        <button class="tab-button" data-tab="player-actions">Player Actions</button>
+                    </div>
+                    <div id="drug-news" class="events-tab active">
+                        <h2>Drug News:</h2>
+                        <div id="drug-news-log" class="events-log"></div>
+                    </div>
+                    <div id="player-actions" class="events-tab">
+                        <h2>Player Actions:</h2>
+                        <div id="player-actions-log" class="events-log"></div>
+                    </div>
                 </div>
             </div>
 

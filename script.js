@@ -141,7 +141,10 @@ let gameState = {
         items: {}  // Will be filled with { productName: quantity }
     },
     market: {},    // Will be filled with current prices
-    events: [],
+    events: {
+        drugNews: [],
+        playerActions: []
+    },
     bankAccount: 0,
     netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
 };
@@ -189,8 +192,11 @@ function cacheDOM() {
         // Market
         marketList: document.getElementById('market-list'),
         
-        // Events log
-        eventsLog: document.getElementById('events-log'),
+        // Events logs
+        drugNewsLog: document.getElementById('drug-news-log'),
+        playerActionsLog: document.getElementById('player-actions-log'),
+        eventsTabs: document.querySelectorAll('.tab-button'),
+        eventsTabsContent: document.querySelectorAll('.events-tab'),
         
         // Action buttons
         loanSharkBtn: document.getElementById('loan-shark-btn'),
@@ -231,6 +237,19 @@ function setupEventListeners() {
     
     // Modal close button
     DOM.modalClose.addEventListener('click', closeModal);
+    
+    // Event tabs
+    DOM.eventsTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            DOM.eventsTabs.forEach(t => t.classList.remove('active'));
+            DOM.eventsTabsContent.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+    });
 }
 
 // Start the game with the selected options
@@ -269,7 +288,10 @@ function initializeGame() {
             items: {}
         },
         market: {},
-        events: [],
+        events: {
+            drugNews: [],
+            playerActions: []
+        },
         bankAccount: 0,
         netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
     };
@@ -285,7 +307,8 @@ function initializeGame() {
     updateUnlockedCities();
     
     // Add initial event
-    addEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
+    addPlayerActionEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
+    addDrugNewsEvent("The local market is active. Check prices and start dealing!");
 }
 
 // Generate random market prices for the current location
@@ -395,15 +418,15 @@ function updatePlayerRank() {
         gameState.rank = newRank;
         
         if (isPromotion) {
-            addEvent(`Congratulations! You've been promoted to ${newRank.name}!`);
+            addPlayerActionEvent(`Congratulations! You've been promoted to ${newRank.name}!`);
             
             // If reached International Kingpin or higher, unlock all cities
             if (newRank.minWealth >= 10000000) {
                 unlockAllCities();
-                addEvent("You've reached international status! All cities are now unlocked.");
+                addPlayerActionEvent("You've reached international status! All cities are now unlocked.");
             }
         } else {
-            addEvent(`Your rank has decreased to ${newRank.name}.`);
+            addPlayerActionEvent(`Your rank has decreased to ${newRank.name}.`);
         }
         
         // Update the display
@@ -611,7 +634,8 @@ function travelToDistrict(district) {
         generateMarketPrices();
         updateLocationDisplay();
         updateMarketDisplay();
-        addEvent(`You've traveled to ${district}.`);
+        addPlayerActionEvent(`You've traveled to ${district}.`);
+        addDrugNewsEvent(`Market prices in ${district} have been updated.`);
     }
 }
 
@@ -623,7 +647,8 @@ function travelToCity(city) {
         generateMarketPrices();
         updateLocationDisplay();
         updateMarketDisplay();
-        addEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
+        addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
+        addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
     }
 }
 
@@ -633,6 +658,7 @@ function unlockAllCities() {
         WORLD_MAP[city].unlocked = true;
     }
     updateUnlockedCities();
+    addDrugNewsEvent("Breaking News: Global markets are now open to your operation!");
 }
 
 // Show buy modal for a product
@@ -719,7 +745,7 @@ function buyProduct(productName, quantity) {
         updateMarketDisplay();
         
         // Add event
-        addEvent(`Bought ${quantity} ${productName} for $${formatMoney(totalCost)}.`);
+        addPlayerActionEvent(`Bought ${quantity} ${productName} for $${formatMoney(totalCost)}.`);
     }
 }
 
@@ -799,7 +825,7 @@ function sellProduct(productName, quantity) {
     updateMarketDisplay();
     
     // Add event
-    addEvent(`Sold ${quantity} ${productName} for $${formatMoney(totalValue)}.`);
+    addPlayerActionEvent(`Sold ${quantity} ${productName} for $${formatMoney(totalValue)}.`);
 }
 
 // Show loan shark modal
@@ -862,7 +888,7 @@ function borrowMoney(amount) {
     gameState.debt += amount;
     
     updatePlayerStats();
-    addEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+    addPlayerActionEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
 }
 
 // Repay debt to the loan shark
@@ -874,10 +900,10 @@ function repayDebt(amount) {
     
     updatePlayerStats();
     
-    addEvent(`Repaid $${formatMoney(actualRepayment)} to the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+    addPlayerActionEvent(`Repaid $${formatMoney(actualRepayment)} to the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
     
     if (gameState.debt === 0) {
-        addEvent("You've paid off your debt completely!");
+        addPlayerActionEvent("You've paid off your debt completely!");
     }
 }
 
@@ -941,7 +967,7 @@ function depositMoney(amount) {
     gameState.bankAccount += amount;
     
     updatePlayerStats();
-    addEvent(`Deposited $${formatMoney(amount)} in the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
+    addPlayerActionEvent(`Deposited $${formatMoney(amount)} in the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
 }
 
 // Withdraw money from the bank
@@ -950,7 +976,7 @@ function withdrawMoney(amount) {
     gameState.cash += amount;
     
     updatePlayerStats();
-    addEvent(`Withdrew $${formatMoney(amount)} from the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
+    addPlayerActionEvent(`Withdrew $${formatMoney(amount)} from the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
 }
 
 // End the current day and proceed to the next
@@ -983,15 +1009,17 @@ function endDay() {
     updateMarketDisplay();
     
     // Add events to log
-    addEvent(`Day ${gameState.day}: A new day begins.`);
+    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
     
     if (interestAmount > 0) {
-        addEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
     }
     
     if (bankInterest > 0) {
-        addEvent(`Interest earned in bank: $${formatMoney(bankInterest)}.`);
+        addPlayerActionEvent(`Interest earned in bank: $${formatMoney(bankInterest)}.`);
     }
+    
+    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
 }
 
 // Generate random events for the day
@@ -1037,7 +1065,8 @@ function policeBust() {
     updateInventoryDisplay();
     
     // Add event
-    addEvent(`🚨 Police bust! You lost ${lostQuantity} ${randomProduct}.`);
+    addDrugNewsEvent(`🚨 Police bust! Authorities raided ${gameState.currentDistrict}.`);
+    addPlayerActionEvent(`You lost ${lostQuantity} ${randomProduct} in the police raid.`);
 }
 
 // Price spike event
@@ -1058,7 +1087,7 @@ function priceSpike() {
     gameState.market[randomProduct] = newPrice;
     
     // Add event
-    addEvent(`💰 Price spike! ${randomProduct} prices have soared to $${formatMoney(newPrice)}.`);
+    addDrugNewsEvent(`💰 Price spike! ${randomProduct} prices have soared to $${formatMoney(newPrice)} due to a supply shortage.`);
 }
 
 // Product scarcity event
@@ -1071,7 +1100,7 @@ function productScarcity() {
     delete gameState.market[randomProduct];
     
     // Add event
-    addEvent(`⚠️ Product shortage! ${randomProduct} is unavailable today.`);
+    addDrugNewsEvent(`⚠️ Product shortage! ${randomProduct} is unavailable in ${gameState.currentDistrict} today due to a major bust.`);
 }
 
 // End the game and show final score
@@ -1112,22 +1141,41 @@ function endGame() {
     DOM.modalContainer.classList.remove('hidden');
 }
 
-// Add an event to the events log
-function addEvent(message) {
+// Add an event to the drug news log
+function addDrugNewsEvent(message) {
     const event = document.createElement('div');
     event.classList.add('event');
     event.textContent = message;
     
     // Add to the game state events array
-    gameState.events.unshift(message);
-    if (gameState.events.length > 50) gameState.events.pop();
+    gameState.events.drugNews.unshift(message);
+    if (gameState.events.drugNews.length > 50) gameState.events.drugNews.pop();
     
     // Add to the DOM
-    DOM.eventsLog.insertBefore(event, DOM.eventsLog.firstChild);
+    DOM.drugNewsLog.insertBefore(event, DOM.drugNewsLog.firstChild);
     
     // Limit the number of events shown
-    if (DOM.eventsLog.children.length > 15) {
-        DOM.eventsLog.removeChild(DOM.eventsLog.lastChild);
+    if (DOM.drugNewsLog.children.length > 15) {
+        DOM.drugNewsLog.removeChild(DOM.drugNewsLog.lastChild);
+    }
+}
+
+// Add an event to the player actions log
+function addPlayerActionEvent(message) {
+    const event = document.createElement('div');
+    event.classList.add('event');
+    event.textContent = message;
+    
+    // Add to the game state events array
+    gameState.events.playerActions.unshift(message);
+    if (gameState.events.playerActions.length > 50) gameState.events.playerActions.pop();
+    
+    // Add to the DOM
+    DOM.playerActionsLog.insertBefore(event, DOM.playerActionsLog.firstChild);
+    
+    // Limit the number of events shown
+    if (DOM.playerActionsLog.children.length > 15) {
+        DOM.playerActionsLog.removeChild(DOM.playerActionsLog.lastChild);
     }
 }
 
