@@ -1400,6 +1400,86 @@ function setupEnhancedEventListeners() {
     // This function can be used to add any additional event listeners for new features
 }
 
+// Show loan shark modal
+function showLoanSharkModal() {
+    DOM.modalTitle.textContent = "Loan Shark";
+    
+    let content = `
+        <div class="loan-shark-modal">
+            <p>Current debt: $${formatMoney(gameState.debt)}</p>
+            <p>Interest rate: ${GAME.INITIAL.INTEREST_RATE * 100}% per day</p>
+            
+            <div class="loan-options">
+                <div class="borrow-section">
+                    <h3>Borrow Money</h3>
+                    <div class="input-group">
+                        <label for="borrow-amount">Amount to borrow:</label>
+                        <input type="number" id="borrow-amount" min="100" step="100" value="1000">
+                    </div>
+                    <button id="confirm-borrow">Borrow</button>
+                </div>
+                
+                <div class="repay-section">
+                    <h3>Repay Debt</h3>
+                    <div class="input-group">
+                        <label for="repay-amount">Amount to repay:</label>
+                        <input type="number" id="repay-amount" min="100" max="${gameState.cash}" step="100" value="${Math.min(1000, gameState.cash)}">
+                    </div>
+                    <button id="confirm-repay" ${gameState.cash <= 0 ? 'disabled' : ''}>Repay</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('confirm-borrow').addEventListener('click', () => {
+        const amount = parseInt(document.getElementById('borrow-amount').value) || 0;
+        if (amount >= 100) {
+            borrowMoney(amount);
+            closeModal();
+        }
+    });
+    
+    document.getElementById('confirm-repay').addEventListener('click', () => {
+        const amount = parseInt(document.getElementById('repay-amount').value) || 0;
+        if (amount > 0 && amount <= gameState.cash) {
+            repayDebt(amount);
+            closeModal();
+        }
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Borrow money from the loan shark
+function borrowMoney(amount) {
+    gameState.cash += amount;
+    gameState.debt += amount;
+    
+    updatePlayerStats();
+    updateUnlockedCities(); // Check if player can unlock new cities now
+    addPlayerActionEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+}
+
+// Repay debt to the loan shark
+function repayDebt(amount) {
+    const actualRepayment = Math.min(amount, gameState.debt);
+    
+    gameState.cash -= actualRepayment;
+    gameState.debt -= actualRepayment;
+    
+    updatePlayerStats();
+    
+    addPlayerActionEvent(`Repaid $${formatMoney(actualRepayment)} to the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+    
+    if (gameState.debt === 0) {
+        addPlayerActionEvent("You've paid off your debt completely!");
+    }
+}
+
 // Function to show available storage options
 function showStorageOptionsModal() {
     DOM.modalTitle.textContent = "Purchase Storage";
@@ -1959,7 +2039,7 @@ function increaseHeatLevel(transactionValue) {
     
     // If heat is high, give warnings to player
     if (gameState.police.heatLevel > 70) {
-        addPlayerActionEvent(⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
+        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
     } else if (gameState.police.heatLevel > 40) {
         addPlayerActionEvent("Note: Your activities are attracting some police attention.");
     }
