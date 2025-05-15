@@ -40,6 +40,141 @@ const GAME = {
     ],
 };
 
+// Enhanced events configuration
+const ENHANCED_EVENTS = {
+    PRICE_CHANGE_CHANCE: 0.9,        // Increased from 0.8
+    POLICE_BUST_CHANCE: 0.1,         // Doubled from 0.05
+    PRODUCT_SCARCITY_CHANCE: 0.3,    // Increased from 0.2
+    BULK_DEAL_CHANCE: 0.15,          // Increased from 0.1
+    PRICE_CRASH_CHANCE: 0.2,         // New event
+    MARKET_FLOOD_CHANCE: 0.15,       // New event
+    HIGH_DEMAND_CHANCE: 0.25,        // New event
+    GANG_WAR_CHANCE: 0.05            // New event
+};
+
+// Storage options configuration
+const STORAGE_OPTIONS = {
+    "Small Safehouse": {
+        description: "A small apartment to store your goods",
+        capacity: 200,
+        cost: 50000,
+        requiredRank: 1, // Local Supplier
+        locations: "all"
+    },
+    "Warehouse": {
+        description: "A medium-sized storage facility",
+        capacity: 500,
+        cost: 250000,
+        requiredRank: 2, // District Boss
+        locations: "all"
+    },
+    "Secure Compound": {
+        description: "A large secure compound with guards",
+        capacity: 1000,
+        cost: 1000000,
+        requiredRank: 3, // City Boss
+        locations: "all"
+    },
+    "Private Island": {
+        description: "An offshore location for maximum storage",
+        capacity: 5000,
+        cost: 10000000,
+        requiredRank: 5, // International Kingpin
+        locations: "all"
+    }
+};
+
+// Police system configuration
+const POLICE_SYSTEM = {
+    // Heat level affects police encounter probability
+    heatLevel: 0,  // 0-100 scale
+    
+    // Different types of encounters
+    encounters: {
+        SEARCH: {
+            name: "Police Search",
+            description: "Police are searching suspicious individuals.",
+            heatThreshold: 20,
+            successChance: 0.6,  // Chance of avoiding consequences
+            consequences: {
+                inventory: 0.3,   // Lose 30% of inventory if caught
+                cash: 0.1        // Lose 10% of cash as bribe/fine if caught
+            }
+        },
+        RAID: {
+            name: "Police Raid",
+            description: "Police are conducting targeted raids.",
+            heatThreshold: 50,
+            successChance: 0.4,
+            consequences: {
+                inventory: 0.6,   // Lose 60% of inventory if caught
+                cash: 0.2        // Lose 20% of cash as fine
+            }
+        },
+        BUST: {
+            name: "Major Bust Operation",
+            description: "Police are conducting a major operation.",
+            heatThreshold: 80,
+            successChance: 0.2,
+            consequences: {
+                inventory: 1.0,   // Lose all inventory
+                cash: 0.5,       // Lose 50% of cash as fine/legal fees
+                jailTime: 3      // Lose 3 days in jail
+            }
+        }
+    },
+    
+    // Districts have different police activity levels
+    districtActivity: {
+        "high": 1.5,    // Wealthy areas, financial districts
+        "medium": 1.0,  // Standard areas
+        "low": 0.5      // Poor areas, slums
+    }
+};
+
+// Bank account types
+const BANK_ACCOUNTS = {
+    "Standard Account": {
+        description: "A basic bank account",
+        interestRate: 0.02, // 2% per day
+        depositFee: 0,
+        withdrawalFee: 0,
+        minimumBalance: 0,
+        requiredRank: 0, // Available to all
+        unlocked: true
+    },
+    "Premium Account": {
+        description: "Higher interest rates with minimum balance",
+        interestRate: 0.03, // 3% per day
+        depositFee: 0,
+        withdrawalFee: 0.01, // 1% fee
+        minimumBalance: 50000,
+        requiredRank: 1, // Local Supplier
+        unlocked: false
+    },
+    "Offshore Account": {
+        description: "Hide your money from authorities with this untraceable account",
+        interestRate: 0.01, // Lower interest
+        depositFee: 0.05, // 5% deposit fee
+        withdrawalFee: 0.05, // 5% withdrawal fee
+        minimumBalance: 100000,
+        requiredRank: 3, // City Boss
+        unlocked: false,
+        policeProtection: true // Money is safe from police
+    },
+    "Cryptocurrency Wallet": {
+        description: "Highly volatile but potentially lucrative digital currency",
+        interestRate: 0.05, // Base 5% rate
+        volatility: 0.10, // +/- 10% possible daily fluctuation
+        depositFee: 0.02,
+        withdrawalFee: 0.02,
+        minimumBalance: 200000,
+        requiredRank: 4, // Regional Kingpin
+        unlocked: false,
+        policeProtection: true
+    }
+};
+
 // Cities and their districts
 const WORLD_MAP = {
     "New York": {
@@ -227,7 +362,7 @@ function setupEventListeners() {
     DOM.travelBtn.addEventListener('click', showTravelOptions);
     
     // End day button
-    DOM.endDayBtn.addEventListener('click', endDay);
+    DOM.endDayBtn.addEventListener('click', enhancedEndDay);
     
     // Loan shark button
     DOM.loanSharkBtn.addEventListener('click', showLoanSharkModal);
@@ -295,6 +430,9 @@ function initializeGame() {
         bankAccount: 0,
         netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
     };
+
+    // Add enhanced properties to gameState
+    enhanceGameState();
     
     // Generate initial market prices
     generateMarketPrices();
@@ -306,9 +444,96 @@ function initializeGame() {
     updateMarketDisplay();
     updateUnlockedCities();
     
+    // Update the UI with new elements
+    updateUI();
+
+    // Set up enhanced event listeners
+    setupEnhancedEventListeners();
+    
+    // Update heat display
+    updateHeatDisplay();
+    
     // Add initial event
     addPlayerActionEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
     addDrugNewsEvent("The local market is active. Check prices and start dealing!");
+}
+
+// Enhance gameState with new properties
+function enhanceGameState() {
+    // Add storage properties
+    gameState.storage = {
+        ownedProperties: {},
+        totalCapacity: GAME.INITIAL.INVENTORY_SPACE
+    };
+    
+    // Add police properties
+    gameState.police = {
+        heatLevel: 0,
+        lastEncounter: 0,
+        bribesGiven: 0
+    };
+    
+    // Add enhanced banking
+    gameState.banking = {
+        accounts: {
+            "Standard Account": {
+                balance: 0,
+                unlocked: true
+            }
+        },
+        totalSavings: 0
+    };
+}
+
+// Update UI with new elements
+function updateUI() {
+    // Add Storage button to actions panel
+    const actionsPanel = document.getElementById('actions-panel');
+    const storageBtn = document.createElement('button');
+    storageBtn.id = 'storage-btn';
+    storageBtn.textContent = 'Storage Options';
+    actionsPanel.appendChild(storageBtn);
+    
+    // Add Heat Level indicator to player stats
+    const playerStats = document.getElementById('player-stats');
+    const heatDiv = document.createElement('div');
+    heatDiv.id = 'heat';
+    heatDiv.innerHTML = 'Heat: <span id="heat-value">0</span>';
+    playerStats.appendChild(heatDiv);
+    
+    // Update DOM cache
+    DOM.storageBtn = storageBtn;
+    DOM.heatValue = document.getElementById('heat-value');
+}
+
+// Set up enhanced event listeners
+function setupEnhancedEventListeners() {
+    // Storage button
+    if (DOM.storageBtn) {
+        DOM.storageBtn.addEventListener('click', showStorageOptionsModal);
+    }
+    
+    // Replace bank button functionality
+    if (DOM.bankBtn) {
+        DOM.bankBtn.removeEventListener('click', showBankModal);
+        DOM.bankBtn.addEventListener('click', showEnhancedBankModal);
+    }
+}
+
+// Update heat display
+function updateHeatDisplay() {
+    if (!DOM.heatValue) return;
+    
+    DOM.heatValue.textContent = Math.round(gameState.police.heatLevel);
+    
+    // Add visual indicator for heat level
+    if (gameState.police.heatLevel > 70) {
+        DOM.heatValue.className = 'high-heat';
+    } else if (gameState.police.heatLevel > 40) {
+        DOM.heatValue.className = 'medium-heat';
+    } else {
+        DOM.heatValue.className = '';
+    }
 }
 
 // Generate random market prices for the current location
@@ -401,7 +626,15 @@ function updatePlayerStats() {
 function updatePlayerRank() {
     // Calculate net worth (cash + inventory value + bank account - debt)
     const inventoryValue = calculateInventoryValue();
-    gameState.netWorth = gameState.cash + inventoryValue + gameState.bankAccount - gameState.debt;
+    
+    let bankTotal = gameState.bankAccount;
+    
+    // If using enhanced banking, calculate total from all accounts
+    if (gameState.banking && gameState.banking.totalSavings !== undefined) {
+        bankTotal = gameState.banking.totalSavings;
+    }
+    
+    gameState.netWorth = gameState.cash + inventoryValue + bankTotal - gameState.debt;
     
     // Find the highest rank the player qualifies for
     let newRank = GAME.RANKS[0];
@@ -610,7 +843,7 @@ function showTravelOptions() {
     // Add event listeners to district options
     document.querySelectorAll('.district-option:not([disabled])').forEach(option => {
         option.addEventListener('click', () => {
-            travelToDistrict(option.dataset.district);
+            enhancedTravelToDistrict(option.dataset.district);
             closeModal();
         });
     });
@@ -618,7 +851,7 @@ function showTravelOptions() {
     // Add event listeners to city options
     document.querySelectorAll('.city-option:not(.locked)').forEach(option => {
         option.addEventListener('click', () => {
-            travelToCity(option.dataset.city);
+            enhancedTravelToCity(option.dataset.city);
             closeModal();
         });
     });
@@ -627,7 +860,7 @@ function showTravelOptions() {
     DOM.modalContainer.classList.remove('hidden');
 }
 
-// Travel to a different district
+// Travel to a different district (original function kept for reference)
 function travelToDistrict(district) {
     if (district !== gameState.currentDistrict) {
         gameState.currentDistrict = district;
@@ -639,7 +872,25 @@ function travelToDistrict(district) {
     }
 }
 
-// Travel to a different city
+// Enhanced travel to a different district - now advances time
+function enhancedTravelToDistrict(district) {
+    if (district !== gameState.currentDistrict) {
+        gameState.currentDistrict = district;
+        
+        // Advance the day
+        advanceDayForTravel();
+        
+        // Generate new market prices
+        generateMarketPrices();
+        updateLocationDisplay();
+        updateMarketDisplay();
+        
+        addPlayerActionEvent(`You've traveled to ${district}.`);
+        addDrugNewsEvent(`Market prices in ${district} have been updated.`);
+    }
+}
+
+// Travel to a different city (original function kept for reference)
 function travelToCity(city) {
     if (city !== gameState.currentCity && WORLD_MAP[city].unlocked) {
         gameState.currentCity = city;
@@ -650,6 +901,65 @@ function travelToCity(city) {
         addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
         addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
     }
+}
+
+// Enhanced travel to a different city - now advances time
+function enhancedTravelToCity(city) {
+    if (city !== gameState.currentCity && WORLD_MAP[city].unlocked) {
+        gameState.currentCity = city;
+        gameState.currentDistrict = WORLD_MAP[city].districts[0];
+        
+        // Advance the day more for traveling to a different city
+        advanceDayForTravel(true);
+        
+        // Generate new market prices
+        generateMarketPrices();
+        updateLocationDisplay();
+        updateMarketDisplay();
+        
+        addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
+        addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
+    }
+}
+
+// Function to advance the day when traveling
+function advanceDayForTravel(isCityTravel = false) {
+    // City travel takes more time than district travel
+    const daysToAdvance = isCityTravel ? 2 : 1;
+    
+    for (let i = 0; i < daysToAdvance; i++) {
+        // Apply interest to debt
+        const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
+        gameState.debt += interestAmount;
+        
+        // Apply interest to bank accounts
+        applyBankInterest();
+        
+        // Apply heat decay for police system
+        decreaseHeatLevel();
+        
+        // Increment the day
+        gameState.day++;
+        
+        // Check if game is over after day advancement
+        if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+            endGame();
+            return;
+        }
+        
+        // Add events to log
+        if (i === 0) { // Only add these messages once
+            addPlayerActionEvent(`Day ${gameState.day}: Travel day.`);
+            
+            if (interestAmount > 0) {
+                addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+            }
+        }
+    }
+    
+    // Update displays
+    updatePlayerStats();
+    updateHeatDisplay();
 }
 
 // Unlock all cities in the world map
@@ -739,6 +1049,10 @@ function buyProduct(productName, quantity) {
         const weightPerUnit = productInfo ? productInfo.weight : 1;
         gameState.inventory.space.used += quantity * weightPerUnit;
         
+        // Increase heat level based on transaction size
+        increaseHeatLevel(totalCost);
+        updateHeatDisplay();
+        
         // Update displays
         updatePlayerStats();
         updateInventoryDisplay();
@@ -818,6 +1132,10 @@ function sellProduct(productName, quantity) {
     const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
     const weightPerUnit = productInfo ? productInfo.weight : 1;
     gameState.inventory.space.used -= quantity * weightPerUnit;
+    
+    // Increase heat level based on transaction size
+    increaseHeatLevel(totalValue);
+    updateHeatDisplay();
     
     // Update displays
     updatePlayerStats();
@@ -907,7 +1225,7 @@ function repayDebt(amount) {
     }
 }
 
-// Show bank modal
+// Original bank modal (kept for reference)
 function showBankModal() {
     DOM.modalTitle.textContent = "Bank";
     
@@ -961,7 +1279,335 @@ function showBankModal() {
     DOM.modalContainer.classList.remove('hidden');
 }
 
-// Deposit money in the bank
+// Show enhanced bank modal
+function showEnhancedBankModal() {
+    DOM.modalTitle.textContent = "Banking";
+    
+    let content = `
+        <div class="bank-modal">
+            <div class="bank-accounts-summary">
+                <h3>Your Accounts</h3>
+                <p>Cash on Hand: $${formatMoney(gameState.cash)}</p>
+                <div class="accounts-list">
+    `;
+    
+    // List all accounts
+    for (const [accountName, accountInfo] of Object.entries(BANK_ACCOUNTS)) {
+        const playerAccount = gameState.banking.accounts[accountName] || { balance: 0, unlocked: false };
+        
+        if (playerAccount.unlocked || shouldUnlockAccount(accountName)) {
+            // Unlock account if player meets requirements
+            if (!playerAccount.unlocked) {
+                unlockBankAccount(accountName);
+                playerAccount.unlocked = true;
+                addPlayerActionEvent(`You've unlocked a new bank account: ${accountName}!`);
+            }
+            
+            content += `
+                <div class="account-item">
+                    <div class="account-header">
+                        <h4>${accountName}</h4>
+                        <p class="account-balance">$${formatMoney(playerAccount.balance)}</p>
+                    </div>
+                    <p class="account-description">${accountInfo.description}</p>
+                    <p class="account-details">
+                        Interest: ${accountInfo.interestRate * 100}%${accountInfo.volatility ? 
+                          ` (±${accountInfo.volatility * 100}% volatility)` : ''}
+                    </p>
+                    <div class="account-actions">
+                        <button 
+                            class="account-deposit-btn" 
+                            data-account="${accountName}"
+                            ${gameState.cash <= 0 ? 'disabled' : ''}
+                        >Deposit</button>
+                        <button 
+                            class="account-withdraw-btn" 
+                            data-account="${accountName}"
+                            ${playerAccount.balance <= 0 ? 'disabled' : ''}
+                        >Withdraw</button>
+                    </div>
+                </div>
+            `;
+        } else if (GAME.RANKS.indexOf(gameState.rank) >= accountInfo.requiredRank) {
+            // Show locked account that player qualifies for
+            content += `
+                <div class="account-item locked-account">
+                    <div class="account-header">
+                        <h4>${accountName} 🔒</h4>
+                    </div>
+                    <p class="account-description">${accountInfo.description}</p>
+                    <p class="account-unlock">
+                        Requires $${formatMoney(accountInfo.minimumBalance)} minimum balance to open
+                    </p>
+                    <div class="account-actions">
+                        <button 
+                            class="account-unlock-btn" 
+                            data-account="${accountName}"
+                            ${gameState.cash < accountInfo.minimumBalance ? 'disabled' : ''}
+                        >Open Account ($${formatMoney(accountInfo.minimumBalance)})</button>
+                    </div>
+                </div>
+            `;
+        }
+    }
+    
+    content += `
+                </div>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners for deposit buttons
+    document.querySelectorAll('.account-deposit-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', () => {
+            showDepositModal(button.dataset.account);
+        });
+    });
+    
+    // Add event listeners for withdrawal buttons
+    document.querySelectorAll('.account-withdraw-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', () => {
+            showWithdrawModal(button.dataset.account);
+        });
+    });
+    
+    // Add event listeners for unlock buttons
+    document.querySelectorAll('.account-unlock-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', () => {
+            unlockBankAccount(button.dataset.account, true);
+            closeModal();
+            showEnhancedBankModal(); // Refresh the bank modal
+        });
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Show deposit modal for a specific account
+function showDepositModal(accountName) {
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    const currentBalance = gameState.banking.accounts[accountName].balance;
+    const depositFee = accountInfo.depositFee || 0;
+    
+    DOM.modalTitle.textContent = `Deposit to ${accountName}`;
+    
+    let content = `
+        <div class="deposit-modal">
+            <p>Current Balance: $${formatMoney(currentBalance)}</p>
+            <p>Cash Available: $${formatMoney(gameState.cash)}</p>
+            ${depositFee > 0 ? `<p>Deposit Fee: ${depositFee * 100}%</p>` : ''}
+            
+            <div class="amount-input">
+                <label for="deposit-amount">Amount to deposit:</label>
+                <input type="number" id="deposit-amount" min="100" max="${gameState.cash}" step="100" value="${Math.min(1000, gameState.cash)}">
+            </div>
+            
+            ${depositFee > 0 ? 
+              `<p>Fee amount: $<span id="fee-amount">${formatMoney(Math.min(1000, gameState.cash) * depositFee)}</span></p>` : ''}
+            <p>Final deposit: $<span id="final-deposit">${formatMoney(Math.min(1000, gameState.cash) * (1 - depositFee))}</span></p>
+            
+            <button id="confirm-deposit">Confirm Deposit</button>
+        </div>
+    `;
+    
+    // Replace the current modal content
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    const depositInput = document.getElementById('deposit-amount');
+    const finalDepositSpan = document.getElementById('final-deposit');
+    const feeAmountSpan = document.getElementById('fee-amount');
+    
+    depositInput.addEventListener('input', () => {
+        const amount = parseInt(depositInput.value) || 0;
+        const fee = Math.round(amount * depositFee);
+        const finalDeposit = amount - fee;
+        
+        if (feeAmountSpan) {
+            feeAmountSpan.textContent = formatMoney(fee);
+        }
+        finalDepositSpan.textContent = formatMoney(finalDeposit);
+    });
+    
+    document.getElementById('confirm-deposit').addEventListener('click', () => {
+        const amount = parseInt(depositInput.value) || 0;
+        if (amount > 0 && amount <= gameState.cash) {
+            depositToAccount(accountName, amount);
+            closeModal();
+            showEnhancedBankModal(); // Return to the bank modal
+        }
+    });
+}
+
+// Show withdraw modal for a specific account
+function showWithdrawModal(accountName) {
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    const currentBalance = gameState.banking.accounts[accountName].balance;
+    const withdrawalFee = accountInfo.withdrawalFee || 0;
+    
+    DOM.modalTitle.textContent = `Withdraw from ${accountName}`;
+    
+    let content = `
+        <div class="withdraw-modal">
+            <p>Current Balance: $${formatMoney(currentBalance)}</p>
+            ${withdrawalFee > 0 ? `<p>Withdrawal Fee: ${withdrawalFee * 100}%</p>` : ''}
+            
+            <div class="amount-input">
+                <label for="withdraw-amount">Amount to withdraw:</label>
+                <input type="number" id="withdraw-amount" min="100" max="${currentBalance}" step="100" value="${Math.min(1000, currentBalance)}">
+            </div>
+            
+            ${withdrawalFee > 0 ? 
+              `<p>Fee amount: $<span id="fee-amount">${formatMoney(Math.min(1000, currentBalance) * withdrawalFee)}</span></p>` : ''}
+            <p>You will receive: $<span id="final-withdraw">${formatMoney(Math.min(1000, currentBalance) * (1 - withdrawalFee))}</span></p>
+            
+            <button id="confirm-withdraw">Confirm Withdrawal</button>
+        </div>
+    `;
+    
+    // Replace the current modal content
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    const withdrawInput = document.getElementById('withdraw-amount');
+    const finalWithdrawSpan = document.getElementById('final-withdraw');
+    const feeAmountSpan = document.getElementById('fee-amount');
+    
+    withdrawInput.addEventListener('input', () => {
+        const amount = parseInt(withdrawInput.value) || 0;
+        const fee = Math.round(amount * withdrawalFee);
+        const finalWithdraw = amount - fee;
+        
+        if (feeAmountSpan) {
+            feeAmountSpan.textContent = formatMoney(fee);
+        }
+        finalWithdrawSpan.textContent = formatMoney(finalWithdraw);
+    });
+    
+    document.getElementById('confirm-withdraw').addEventListener('click', () => {
+        const amount = parseInt(withdrawInput.value) || 0;
+        if (amount > 0 && amount <= currentBalance) {
+            withdrawFromAccount(accountName, amount);
+            closeModal();
+            showEnhancedBankModal(); // Return to the bank modal
+        }
+    });
+}
+
+// Deposit money to a specific account
+function depositToAccount(accountName, amount) {
+    if (amount <= 0 || amount > gameState.cash) return;
+    
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    const depositFee = accountInfo.depositFee || 0;
+    
+    const fee = Math.round(amount * depositFee);
+    const finalDeposit = amount - fee;
+    
+    // Update cash
+    gameState.cash -= amount;
+    
+    // Update account balance
+    gameState.banking.accounts[accountName].balance += finalDeposit;
+    
+    // Update total savings
+    updateTotalSavings();
+    
+    // Update displays
+    updatePlayerStats();
+    
+    // Add event
+    addPlayerActionEvent(`Deposited $${formatMoney(amount)} to ${accountName}${depositFee > 0 ? ` (Fee: $${formatMoney(fee)})` : ''}.`);
+}
+
+// Withdraw money from a specific account
+function withdrawFromAccount(accountName, amount) {
+    const accountBalance = gameState.banking.accounts[accountName].balance;
+    if (amount <= 0 || amount > accountBalance) return;
+    
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    const withdrawalFee = accountInfo.withdrawalFee || 0;
+    
+    const fee = Math.round(amount * withdrawalFee);
+    const finalWithdraw = amount - fee;
+    
+    // Update account balance
+    gameState.banking.accounts[accountName].balance -= amount;
+    
+    // Update cash
+    gameState.cash += finalWithdraw;
+    
+    // Update total savings
+    updateTotalSavings();
+    
+    // Update displays
+    updatePlayerStats();
+    
+    // Add event
+    addPlayerActionEvent(`Withdrew $${formatMoney(amount)} from ${accountName}${withdrawalFee > 0 ? ` (Fee: $${formatMoney(fee)})` : ''}.`);
+}
+
+// Check if an account should be unlocked
+function shouldUnlockAccount(accountName) {
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    
+    // Check if player meets rank requirement
+    if (GAME.RANKS.indexOf(gameState.rank) < accountInfo.requiredRank) {
+        return false;
+    }
+    
+    // Check if player has enough cash to meet minimum balance
+    if (gameState.cash < accountInfo.minimumBalance) {
+        return false;
+    }
+    
+    return true;
+}
+
+// Unlock a bank account
+function unlockBankAccount(accountName, withInitialDeposit = false) {
+    const accountInfo = BANK_ACCOUNTS[accountName];
+    
+    // Initialize account in player's banking data
+    if (!gameState.banking.accounts[accountName]) {
+        gameState.banking.accounts[accountName] = {
+            balance: 0,
+            unlocked: true
+        };
+    }
+    
+    // Make initial deposit if required
+    if (withInitialDeposit && accountInfo.minimumBalance > 0) {
+        // Deduct cash for minimum balance
+        gameState.cash -= accountInfo.minimumBalance;
+        
+        // Add to account balance
+        gameState.banking.accounts[accountName].balance = accountInfo.minimumBalance;
+        
+        // Add event
+        addPlayerActionEvent(`Opened a new ${accountName} with an initial deposit of $${formatMoney(accountInfo.minimumBalance)}.`);
+        
+        // Update displays
+        updatePlayerStats();
+        updateTotalSavings();
+    }
+}
+
+// Update total savings across all accounts
+function updateTotalSavings() {
+    let total = 0;
+    
+    for (const accountName in gameState.banking.accounts) {
+        total += gameState.banking.accounts[accountName].balance;
+    }
+    
+    gameState.banking.totalSavings = total;
+}
+
+// Deposit money in the bank (original function kept for reference)
 function depositMoney(amount) {
     gameState.cash -= amount;
     gameState.bankAccount += amount;
@@ -970,7 +1616,7 @@ function depositMoney(amount) {
     addPlayerActionEvent(`Deposited $${formatMoney(amount)} in the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
 }
 
-// Withdraw money from the bank
+// Withdraw money from the bank (original function kept for reference)
 function withdrawMoney(amount) {
     gameState.bankAccount -= amount;
     gameState.cash += amount;
@@ -979,7 +1625,7 @@ function withdrawMoney(amount) {
     addPlayerActionEvent(`Withdrew $${formatMoney(amount)} from the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
 }
 
-// End the current day and proceed to the next
+// End the current day and proceed to the next (original function kept for reference)
 function endDay() {
     // Apply interest to debt
     const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
@@ -1022,7 +1668,648 @@ function endDay() {
     addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
 }
 
-// Generate random events for the day
+// Enhanced end day function with all new features
+function enhancedEndDay() {
+    // Apply interest to debt
+    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
+    gameState.debt += interestAmount;
+    
+    // Apply interest to bank accounts (new system)
+    applyBankInterest();
+    
+    // Apply heat decay for police system
+    decreaseHeatLevel();
+    
+    // Increment the day
+    gameState.day++;
+    
+    // Check if game is over
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+        return;
+    }
+    
+    // Generate random events with enhanced system
+    enhancedRandomEvents();
+    
+    // Check for police encounter
+    checkPoliceEncounter();
+    
+    // Generate new market prices
+    generateMarketPrices();
+    
+    // Update displays
+    updatePlayerStats();
+    updateMarketDisplay();
+    updateHeatDisplay();
+    
+    // Add events to log
+    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
+    
+    if (interestAmount > 0) {
+        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+    }
+    
+    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
+}
+
+// Apply daily interest to all bank accounts
+function applyBankInterest() {
+    // Backward compatibility check
+    if (!gameState.banking || !gameState.banking.accounts) {
+        // Apply interest to the basic bank account
+        const bankInterest = Math.floor(gameState.bankAccount * 0.02);
+        gameState.bankAccount += bankInterest;
+        
+        if (bankInterest > 0) {
+            addPlayerActionEvent(`Interest earned in bank: $${formatMoney(bankInterest)}.`);
+        }
+        
+        return;
+    }
+    
+    // Apply interest to each account
+    for (const [accountName, accountData] of Object.entries(gameState.banking.accounts)) {
+        if (accountData.balance > 0) {
+            const accountInfo = BANK_ACCOUNTS[accountName];
+            let interestRate = accountInfo.interestRate;
+            
+            // Apply volatility for cryptocurrency
+            if (accountInfo.volatility) {
+                const volatilityAdjustment = (Math.random() * 2 - 1) * accountInfo.volatility;
+                interestRate += volatilityAdjustment;
+                // Ensure interest rate doesn't go too negative
+                interestRate = Math.max(-0.05, interestRate);
+            }
+            
+            const interestAmount = Math.floor(accountData.balance * interestRate);
+            accountData.balance += interestAmount;
+            
+            // Add event if interest is significant
+            if (Math.abs(interestAmount) >= 100) {
+                if (interestAmount > 0) {
+                    addPlayerActionEvent(`Earned $${formatMoney(interestAmount)} interest in your ${accountName}.`);
+                } else {
+                    addPlayerActionEvent(`Lost $${formatMoney(Math.abs(interestAmount))} in your ${accountName} due to market volatility.`);
+                }
+            }
+        }
+    }
+    
+    // Update total savings
+    updateTotalSavings();
+}
+
+// Generate random events with enhanced system
+function enhancedRandomEvents() {
+    // Police bust chance
+    if (Math.random() < ENHANCED_EVENTS.POLICE_BUST_CHANCE) {
+        policeBust();
+    }
+    
+    // Price spike chance
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CHANGE_CHANCE) {
+        priceSpike();
+    }
+    
+    // Product scarcity chance
+    if (Math.random() < ENHANCED_EVENTS.PRODUCT_SCARCITY_CHANCE) {
+        productScarcity();
+    }
+    
+    // Price crash chance (new)
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CRASH_CHANCE) {
+        priceCrash();
+    }
+    
+    // Market flood chance (new)
+    if (Math.random() < ENHANCED_EVENTS.MARKET_FLOOD_CHANCE) {
+        marketFlood();
+    }
+    
+    // High demand chance (new)
+    if (Math.random() < ENHANCED_EVENTS.HIGH_DEMAND_CHANCE) {
+        highDemand();
+    }
+    
+    // Gang war chance (new)
+    if (Math.random() < ENHANCED_EVENTS.GANG_WAR_CHANCE) {
+        gangWar();
+    }
+}
+
+// Price crash event - the opposite of a price spike
+function priceCrash() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    
+    // Crash the price to 30-60% of minimum price
+    const crashMultiplier = 0.3 + Math.random() * 0.3;
+    const newPrice = Math.round(productInfo.minPrice * crashMultiplier);
+    
+    // Set the new price
+    gameState.market[randomProduct] = newPrice;
+    
+    // Add event
+    addDrugNewsEvent(`📉 Price crash! ${randomProduct} prices have plummeted to $${formatMoney(newPrice)} due to market flooding.`);
+}
+
+// Market flood event - makes a product very cheap and abundant
+function marketFlood() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    
+    // Lower the price significantly (20-40% of minimum)
+    const floodPrice = Math.round(productInfo.minPrice * (0.2 + Math.random() * 0.2));
+    
+    // Set the new price
+    gameState.market[randomProduct] = floodPrice;
+    
+    // Add event
+    addDrugNewsEvent(`🌊 Market flood! A massive shipment of ${randomProduct} has flooded ${gameState.currentCity}, dropping prices to $${formatMoney(floodPrice)}.`);
+}
+
+// High demand event - raises prices of all products in an area
+function highDemand() {
+    const demandMultiplier = 1.5 + Math.random();  // 1.5-2.5x price increase
+    let affectedProducts = [];
+    
+    // Apply price increase to all available products
+    for (const product in gameState.market) {
+        const newPrice = Math.round(gameState.market[product] * demandMultiplier);
+        gameState.market[product] = newPrice;
+        affectedProducts.push(product);
+    }
+    
+    // Add event
+    addDrugNewsEvent(`🔥 High demand in ${gameState.currentDistrict}! Prices have increased for all available products due to high local demand.`);
+    
+    // Update market display
+    updateMarketDisplay();
+}
+
+// Gang war event - affects prices and can result in injury
+function gangWar() {
+    // Increase some prices due to territory disputes
+    let affectedProducts = [];
+    const productKeys = Object.keys(gameState.market);
+    
+    // Select 1-3 random products to affect
+    const numAffected = 1 + Math.floor(Math.random() * 3);
+    for (let i = 0; i < numAffected && i < productKeys.length; i++) {
+        const randomIndex = Math.floor(Math.random() * productKeys.length);
+        const product = productKeys[randomIndex];
+        
+        // Remove this product from future consideration
+        productKeys.splice(randomIndex, 1);
+        
+        // Increase price by 30-100%
+        const warMultiplier = 1.3 + Math.random() * 0.7;
+        gameState.market[product] = Math.round(gameState.market[product] * warMultiplier);
+        affectedProducts.push(product);
+    }
+    
+    // Add event
+    addDrugNewsEvent(`⚔️ Gang war! Violence has broken out in ${gameState.currentDistrict}! Territory disputes have affected product availability and prices.`);
+    
+    // Chance of player getting injured (losing money for medical bills)
+    if (Math.random() < 0.4 && gameState.cash > 0) {
+        const injuryCost = Math.min(gameState.cash * 0.15, 5000);  // 15% of cash or $5,000, whichever is less
+        gameState.cash -= Math.round(injuryCost);
+        addPlayerActionEvent(`You were injured in the gang war crossfire! Medical bills cost you $${formatMoney(Math.round(injuryCost))}.`);
+        updatePlayerStats();
+    }
+    
+    // Update market display
+    updateMarketDisplay();
+}
+
+// Increase heat level based on transaction size
+function increaseHeatLevel(transactionValue) {
+    // Larger transactions draw more attention
+    const heatIncrease = Math.log10(transactionValue) * 2;
+    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
+    
+    // If heat is high, give warnings to player
+    if (gameState.police.heatLevel > 70) {
+        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
+    } else if (gameState.police.heatLevel > 40) {
+        addPlayerActionEvent("Note: Your activities are attracting some police attention.");
+    }
+}
+
+// Decrease heat level over time
+function decreaseHeatLevel() {
+    // Heat naturally decreases by 5 points per day
+    gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 5);
+}
+
+// Check for police encounters
+function checkPoliceEncounter() {
+    // Skip if player had an encounter recently (last 3 days)
+    if (gameState.day - gameState.police.lastEncounter < 3) {
+        return;
+    }
+    
+    // Get district police activity modifier
+    const districtModifier = getDistrictPoliceLevel(gameState.currentDistrict);
+    
+    // Calculate encounter probability based on heat level and district
+    const encounterProbability = (gameState.police.heatLevel / 100) * districtModifier * 0.5;
+    
+    if (Math.random() < encounterProbability) {
+        // Police encounter happens!
+        triggerPoliceEncounter();
+    }
+}
+
+// Determine district police activity level
+function getDistrictPoliceLevel(district) {
+    // Define high security districts
+    const highSecurity = ["Manhattan", "Beverly Hills", "Ginza", "Soho", "Downtown", "Akihabara"];
+    
+    // Define low security districts
+    const lowSecurity = ["Bronx", "Compton", "Rocinha", "Favela", "Slum", "Makoko", "Dharavi"];
+    
+    if (highSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.high;
+    } else if (lowSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.low;
+    }
+    
+    return POLICE_SYSTEM.districtActivity.medium;
+}
+
+// Trigger a police encounter
+function triggerPoliceEncounter() {
+    // Determine the type of encounter based on heat level
+    let encounterType;
+    
+    if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.BUST.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.BUST;
+    } else if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.RAID.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.RAID;
+    } else {
+        encounterType = POLICE_SYSTEM.encounters.SEARCH;
+    }
+    
+    // Record the encounter
+    gameState.police.lastEncounter = gameState.day;
+    
+    // Show encounter modal
+    showPoliceEncounterModal(encounterType);
+}
+
+// Show police encounter modal
+function showPoliceEncounterModal(encounterType) {
+    DOM.modalTitle.textContent = encounterType.name;
+    
+    // Calculate bribe amount based on heat level and player's cash
+    const minBribe = 1000 + (gameState.police.heatLevel * 100);
+    const recommendedBribe = Math.min(Math.round(gameState.cash * 0.15), minBribe);
+    const canAffordBribe = gameState.cash >= minBribe;
+    
+    // Calculate chances of success for different options
+    const runChance = Math.max(10, 50 - gameState.police.heatLevel / 2);
+    const fightChance = Math.max(5, 30 - gameState.police.heatLevel / 2);
+    const bribeEffectiveness = Math.min(90, Math.round(recommendedBribe / minBribe * 100));
+    
+    let content = `
+        <div class="police-encounter">
+            <p class="encounter-description">${encounterType.description} They're checking everyone in ${gameState.currentDistrict}.</p>
+            <p class="heat-level">Your current heat level: <span class="heat-value">${Math.round(gameState.police.heatLevel)}/100</span></p>
+            
+            <div class="encounter-options">
+                <div class="option">
+                    <h4>Submit to Search</h4>
+                    <p>Cooperate with the police and hope they don't find anything.</p>
+                    <p>Success chance: ${Math.round(encounterType.successChance * 100)}%</p>
+                    <button id="submit-option">Submit</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Run</h4>
+                    <p>Try to escape the situation. Higher risk but may avoid all consequences.</p>
+                    <p>Success chance: ${runChance}%</p>
+                    <button id="run-option">Run</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Fight</h4>
+                    <p>Resist the police. Very high risk but may avoid all consequences.</p>
+                    <p>Success chance: ${fightChance}%</p>
+                    <button id="fight-option">Fight</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Bribe</h4>
+                    <p>Offer a bribe to make them look the other way.</p>
+                    <p>Minimum bribe: $${formatMoney(minBribe)}</p>
+                    <p>Effectiveness: ${bribeEffectiveness}%</p>
+                    <button id="bribe-option" ${!canAffordBribe ? 'disabled' : ''}>
+                        ${canAffordBribe ? `Bribe $${formatMoney(recommendedBribe)}` : 'Cannot afford bribe'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('submit-option').addEventListener('click', () => {
+        handlePoliceOption('submit', encounterType, recommendedBribe);
+    });
+    
+    document.getElementById('run-option').addEventListener('click', () => {
+        handlePoliceOption('run', encounterType, recommendedBribe, runChance);
+    });
+    
+    document.getElementById('fight-option').addEventListener('click', () => {
+        handlePoliceOption('fight', encounterType, recommendedBribe, fightChance);
+    });
+    
+    const bribeButton = document.getElementById('bribe-option');
+    if (!bribeButton.disabled) {
+        bribeButton.addEventListener('click', () => {
+            handlePoliceOption('bribe', encounterType, recommendedBribe, bribeEffectiveness);
+        });
+    }
+    
+    // Show the modal - can't be closed without selecting an option
+    DOM.modalContainer.classList.remove('hidden');
+    DOM.modalClose.style.display = 'none';
+}
+
+// Handle police encounter option selection
+function handlePoliceOption(option, encounterType, bribeAmount, successChance = null) {
+    // Restore the close button
+    DOM.modalClose.style.display = 'block';
+    
+    let result, message;
+    
+    switch(option) {
+        case 'submit':
+            // Use the encounter's built-in success chance
+            result = Math.random() < encounterType.successChance;
+            
+            if (result) {
+                message = "The police search you but don't find anything suspicious. You're free to go.";
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 10);
+            } else {
+                applyPoliceConsequences(encounterType);
+                message = `The police search you and find incriminating evidence. ${getConsequencesDescription(encounterType)}`;
+            }
+            break;
+            
+        case 'run':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "You manage to slip away from the police! However, they're now more suspicious of you.";
+                gameState.police.heatLevel += 15; // Running increases heat even if successful
+            } else {
+                // Failed run has worse consequences
+                applyPoliceConsequences(encounterType, 1.5);
+                message = `You try to run but are caught! The police are now much more suspicious. ${getConsequencesDescription(encounterType, 1.5)}`;
+                gameState.police.heatLevel += 30;
+            }
+            break;
+            
+        case 'fight':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "Against all odds, you manage to fight your way out! You should lay low for a while.";
+                gameState.police.heatLevel += 50; // Fighting dramatically increases heat
+            } else {
+                // Failed fight has severe consequences
+                applyPoliceConsequences(encounterType, 2);
+                message = `You try to fight but are overwhelmed! ${getConsequencesDescription(encounterType, 2)}`;
+                gameState.police.heatLevel = 100; // Maximum heat
+                
+                // Additional jail time for fighting
+                if (!encounterType.consequences.jailTime) {
+                    serveJailTime(2);
+                } else {
+                    serveJailTime(encounterType.consequences.jailTime + 2);
+                }
+            }
+            break;
+            
+        case 'bribe':
+            result = Math.random() < (successChance / 100);
+            
+            // Pay the bribe regardless of outcome
+            gameState.cash -= bribeAmount;
+            gameState.police.bribesGiven++;
+            
+            if (result) {
+                message = "The officer pockets your cash and tells his colleagues to leave you alone.";
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 30);
+            } else {
+                message = "The officer takes your money but decides to search you anyway!";
+                applyPoliceConsequences(encounterType, 0.5); // Reduced consequences for attempted bribe
+                message += ` ${getConsequencesDescription(encounterType, 0.5)}`;
+            }
+            break;
+    }
+    
+    // Show result message
+    DOM.modalContent.innerHTML = `
+        <div class="police-result">
+            <p>${message}</p>
+            <button id="continue-btn">Continue</button>
+        </div>
+    `;
+    
+    // Add event listener to continue button
+    document.getElementById('continue-btn').addEventListener('click', () => {
+        closeModal();
+        updatePlayerStats();
+        updateInventoryDisplay();
+        updateHeatDisplay();
+    });
+}
+
+// Apply consequences from police encounter
+function applyPoliceConsequences(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    
+    // Lose inventory if applicable
+    if (consequences.inventory) {
+        const inventoryLossRatio = consequences.inventory * multiplier;
+        for (const product in gameState.inventory.items) {
+            const lostAmount = Math.ceil(gameState.inventory.items[product] * inventoryLossRatio);
+            gameState.inventory.items[product] -= lostAmount;
+            
+            // Update inventory space
+            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
+            const weightPerUnit = productInfo ? productInfo.weight : 1;
+            gameState.inventory.space.used -= lostAmount * weightPerUnit;
+            
+            // Remove product if quantity is zero or negative
+            if (gameState.inventory.items[product] <= 0) {
+                delete gameState.inventory.items[product];
+            }
+        }
+    }
+    
+    // Lose cash if applicable
+    if (consequences.cash) {
+        const cashLoss = gameState.cash * consequences.cash * multiplier;
+        gameState.cash -= Math.round(cashLoss);
+        if (gameState.cash < 0) gameState.cash = 0;
+    }
+    
+    // Handle jail time if applicable
+    if (consequences.jailTime) {
+        serveJailTime(consequences.jailTime);
+    }
+    
+    // Update displays
+    updatePlayerStats();
+    updateInventoryDisplay();
+}
+
+// Serve jail time
+function serveJailTime(days) {
+    if (days <= 0) return;
+    
+    const jailDays = Math.round(days);
+    
+    // Advance game time
+    gameState.day += jailDays;
+    
+    // Apply interest to debt for each day
+    const totalInterest = gameState.debt * Math.pow(1 + GAME.INITIAL.INTEREST_RATE, jailDays) - gameState.debt;
+    gameState.debt += Math.round(totalInterest);
+    
+    // Add event
+    addPlayerActionEvent(`You served ${jailDays} days in jail. Your debt accrued $${formatMoney(Math.round(totalInterest))} in interest.`);
+    
+    // Check if game is over after jail time
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+    }
+}
+
+// Get description of consequences
+function getConsequencesDescription(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    let description = "";
+    
+    if (consequences.inventory) {
+        const percent = Math.round(consequences.inventory * multiplier * 100);
+        description += `They confiscate ${percent}% of your inventory. `;
+    }
+    
+    if (consequences.cash) {
+        const percent = Math.round(consequences.cash * multiplier * 100);
+        description += `You lose ${percent}% of your cash as fines. `;
+    }
+    
+    if (consequences.jailTime) {
+        const days = Math.round(consequences.jailTime * multiplier);
+        description += `You're sentenced to ${days} days in jail.`;
+    }
+    
+    return description;
+}
+
+// Function to show available storage options
+function showStorageOptionsModal() {
+    DOM.modalTitle.textContent = "Purchase Storage";
+    
+    let content = `
+        <div class="storage-modal">
+            <h3>Your Current Storage Capacity: ${gameState.storage.totalCapacity}</h3>
+            <p>Purchase properties to increase your storage capacity:</p>
+            
+            <div class="storage-options-list">
+    `;
+    
+    // List all available storage options
+    for (const [propertyName, property] of Object.entries(STORAGE_OPTIONS)) {
+        const alreadyOwned = gameState.storage.ownedProperties[propertyName];
+        const canAfford = gameState.cash >= property.cost;
+        const meetsRankRequirement = GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank;
+        const disabled = alreadyOwned || !canAfford || !meetsRankRequirement;
+        
+        content += `
+            <div class="storage-option ${disabled ? 'disabled' : ''}">
+                <h4>${propertyName} ${alreadyOwned ? '(Owned)' : ''}</h4>
+                <p>${property.description}</p>
+                <p>Storage Capacity: ${property.capacity}</p>
+                <p>Cost: $${formatMoney(property.cost)}</p>
+                ${!meetsRankRequirement ? 
+                    `<p class="requirement-note">Required Rank: ${GAME.RANKS[property.requiredRank].name}</p>` : ''}
+                <button 
+                    class="purchase-storage-btn" 
+                    data-property="${propertyName}" 
+                    ${disabled ? 'disabled' : ''}
+                >
+                    ${alreadyOwned ? 'Owned' : 'Purchase'}
+                </button>
+            </div>
+        `;
+    }
+    
+    content += `
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners to purchase buttons
+    document.querySelectorAll('.purchase-storage-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', () => {
+            purchaseStorage(button.dataset.property);
+            closeModal();
+        });
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Function to purchase storage
+function purchaseStorage(propertyName) {
+    const property = STORAGE_OPTIONS[propertyName];
+    
+    if (gameState.cash >= property.cost && 
+        !gameState.storage.ownedProperties[propertyName] &&
+        GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank) {
+        
+        // Deduct cash
+        gameState.cash -= property.cost;
+        
+        // Add to owned properties
+        gameState.storage.ownedProperties[propertyName] = true;
+        
+        // Increase total capacity
+        gameState.storage.totalCapacity += property.capacity;
+        gameState.inventory.space.max = gameState.storage.totalCapacity;
+        
+        // Update displays
+        updatePlayerStats();
+        updateInventoryDisplay();
+        
+        // Add event
+        addPlayerActionEvent(`Purchased ${propertyName} for $${formatMoney(property.cost)}. Your storage capacity is now ${gameState.storage.totalCapacity}.`);
+    }
+}
+
+// Generate random events for the day (original function kept for reference)
 function generateRandomEvents() {
     // Chance for cop bust
     if (Math.random() < GAME.EVENTS.POLICE_BUST_CHANCE) {
@@ -1063,6 +2350,10 @@ function policeBust() {
     
     // Update displays
     updateInventoryDisplay();
+    
+    // Increase heat level
+    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + 15);
+    updateHeatDisplay();
     
     // Add event
     addDrugNewsEvent(`🚨 Police bust! Authorities raided ${gameState.currentDistrict}.`);
@@ -1107,7 +2398,13 @@ function productScarcity() {
 function endGame() {
     // Calculate final score
     const inventoryValue = calculateInventoryValue();
-    const finalNetWorth = gameState.cash + inventoryValue + gameState.bankAccount - gameState.debt;
+    
+    let totalBankValue = gameState.bankAccount;
+    if (gameState.banking && gameState.banking.totalSavings !== undefined) {
+        totalBankValue = gameState.banking.totalSavings;
+    }
+    
+    const finalNetWorth = gameState.cash + inventoryValue + totalBankValue - gameState.debt;
     
     DOM.modalTitle.textContent = "Game Over";
     
@@ -1119,7 +2416,7 @@ function endGame() {
                 <p>Final Rank: ${gameState.rank.name}</p>
                 <p>Cash: $${formatMoney(gameState.cash)}</p>
                 <p>Inventory Value: $${formatMoney(inventoryValue)}</p>
-                <p>Bank Account: $${formatMoney(gameState.bankAccount)}</p>
+                <p>Bank Balance: $${formatMoney(totalBankValue)}</p>
                 <p>Debt: $${formatMoney(gameState.debt)}</p>
                 <p class="net-worth">Net Worth: $${formatMoney(finalNetWorth)}</p>
             </div>
@@ -1182,6 +2479,10 @@ function addPlayerActionEvent(message) {
 // Close the modal
 function closeModal() {
     DOM.modalContainer.classList.add('hidden');
+    // Restore the close button visibility in case it was hidden
+    if (DOM.modalClose) {
+        DOM.modalClose.style.display = 'block';
+    }
 }
 
 // Format money values with commas

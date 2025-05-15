@@ -1,28 +1,36 @@
-/* Base styling and dark theme */
+/* Import Aldrich font from Google Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Aldrich&display=swap');
+
+/* Base styling and dark theme with 1980s color palette */
 :root {
     --background-dark: #121212;
     --background-light: #1e1e1e;
-    --primary: #845EC2;
-    --secondary: #00C9A7;
-    --accent: #FF9671;
+    --primary: #ff00ff; /* Magenta/Hot pink */
+    --secondary: #00ffff; /* Cyan */
+    --accent: #ffff00; /* Yellow */
+    --highlight: #39ff14; /* Neon green */
+    --purple-glow: #9900ff; /* Purple neon */
+    --blue-glow: #00c3ff; /* Blue neon */
     --text-primary: #ffffff;
     --text-secondary: #d0d0d0;
     --danger: #ff5a5a;
-    --success: #4CAF50;
-    --warning: #FFC107;
+    --success: #39ff14; /* Neon green for success */
+    --warning: #ffff00; /* Yellow for warnings */
 }
 
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: 'Aldrich', sans-serif;
 }
 
 body {
     background-color: var(--background-dark);
     color: var(--text-primary);
     line-height: 1.6;
+    background-image: linear-gradient(to bottom, #121212, #1a1a2e);
+    min-height: 100vh;
 }
 
 /* Game container */
@@ -38,14 +46,17 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 15px;
-    border-bottom: 1px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
     margin-bottom: 20px;
     background-color: var(--background-light);
     border-radius: 5px;
+    box-shadow: 0 0 10px rgba(255, 0, 255, 0.3); /* Magenta glow */
 }
 
 h1, h2 {
     color: var(--primary);
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.7); /* Glow effect */
+    letter-spacing: 1px;
 }
 
 #player-stats {
@@ -65,6 +76,8 @@ h1, h2 {
     background-color: var(--background-light);
     border-radius: 5px;
     padding: 15px;
+    box-shadow: 0 0 8px rgba(0, 195, 255, 0.2); /* Subtle blue glow */
+    border: 1px solid rgba(0, 255, 255, 0.1); /* Subtle cyan border */
 }
 
 /* Location panel */
@@ -72,19 +85,34 @@ h1, h2 {
     margin-bottom: 20px;
 }
 
+/* 80s gradient button styling */
 button {
-    background-color: var(--primary);
+    background: linear-gradient(to right, var(--purple-glow), var(--primary));
     color: white;
     border: none;
     padding: 10px 15px;
     border-radius: 5px;
     cursor: pointer;
     margin-top: 10px;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+    box-shadow: 0 0 8px rgba(153, 0, 255, 0.4);
+    font-weight: bold;
+    letter-spacing: 0.5px;
 }
 
 button:hover {
-    background-color: #6C4BA0;
+    background: linear-gradient(to right, var(--primary), var(--purple-glow));
+    box-shadow: 0 0 12px rgba(153, 0, 255, 0.6);
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    background: linear-gradient(to right, #555, #777);
+    cursor: not-allowed;
+    opacity: 0.7;
+    box-shadow: none;
+    transform: none;
 }
 
 /* Market panel */
@@ -103,6 +131,7 @@ button:hover {
 #market-table th {
     background-color: var(--background-dark);
     color: var(--secondary);
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.7);
 }
 
 .buy-btn, .sell-btn {
@@ -112,11 +141,21 @@ button:hover {
 }
 
 .buy-btn {
-    background-color: var(--success);
+    background: linear-gradient(to right, var(--success), #00ff99);
+    box-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+}
+
+.buy-btn:hover {
+    background: linear-gradient(to right, #00ff99, var(--success));
 }
 
 .sell-btn {
-    background-color: var(--danger);
+    background: linear-gradient(to right, var(--danger), #ff8c8c);
+    box-shadow: 0 0 5px rgba(255, 90, 90, 0.5);
+}
+
+.sell-btn:hover {
+    background: linear-gradient(to right, #ff8c8c, var(--danger));
 }
 
 /* Events panel */
@@ -135,15 +174,18 @@ button:hover {
     cursor: pointer;
     border-bottom: 2px solid transparent;
     transition: all 0.3s;
+    box-shadow: none;
 }
 
 .tab-button:hover {
-    background-color: rgba(132, 94, 194, 0.1);
+    background-color: rgba(255, 0, 255, 0.1);
+    color: var(--primary);
 }
 
 .tab-button.active {
     color: var(--primary);
     border-bottom: 2px solid var(--primary);
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.7);
 }
 
 .events-tab {
@@ -161,6 +203,7 @@ button:hover {
     background-color: var(--background-dark);
     border-radius: 5px;
     margin-top: 10px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
 }
 
 .event {
@@ -191,6 +234,7 @@ ul {
     border-radius: 3px;
     display: flex;
     justify-content: space-between;
+    border-left: 1px solid rgba(0, 255, 255, 0.3);
 }
 
 /* Modal */
@@ -205,6 +249,7 @@ ul {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    backdrop-filter: blur(3px);
 }
 
 #modal {
@@ -212,19 +257,30 @@ ul {
     border-radius: 5px;
     width: 80%;
     max-width: 600px;
+    box-shadow: 0 0 20px rgba(255, 0, 255, 0.3),
+                0 0 40px rgba(0, 255, 255, 0.2);
+    border: 1px solid rgba(255, 0, 255, 0.2);
 }
 
 #modal-header {
     display: flex;
     justify-content: space-between;
     padding: 15px;
-    border-bottom: 1px solid var(--primary);
+    border-bottom: 2px solid var(--primary);
+    background: linear-gradient(to right, rgba(153, 0, 255, 0.1), rgba(255, 0, 255, 0.1));
+}
+
+#modal-title {
+    margin: 0;
+    color: var(--primary);
+    text-shadow: 0 0 5px rgba(255, 0, 255, 0.7);
 }
 
 #modal-close {
     font-size: 24px;
     cursor: pointer;
     color: var(--text-secondary);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.3);
 }
 
 #modal-content {
@@ -244,20 +300,26 @@ ul {
     background-color: var(--background-dark);
     border-radius: 5px;
     cursor: pointer;
-    transition: background-color 0.3s;
+    transition: all 0.3s;
+    border-left: 3px solid var(--blue-glow);
 }
 
 .district-option:hover, .city-option:hover {
-    background-color: var(--primary);
+    background: linear-gradient(to right, rgba(153, 0, 255, 0.2), rgba(0, 195, 255, 0.1));
+    box-shadow: 0 0 8px rgba(0, 195, 255, 0.3);
+    transform: translateX(3px);
 }
 
 .locked {
     opacity: 0.5;
     cursor: not-allowed;
+    border-left-color: #555;
 }
 
 .locked:hover {
     background-color: var(--background-dark);
+    box-shadow: none;
+    transform: none;
 }
 
 /* Intro screen */
@@ -268,6 +330,15 @@ ul {
     align-items: center;
     background-color: var(--background-dark);
     text-align: center;
+    background-image: 
+        linear-gradient(to bottom, rgba(0, 0, 0, 0.8), rgba(0, 0, 0, 0.9)),
+        repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 2px,
+            rgba(153, 0, 255, 0.1) 2px,
+            rgba(153, 0, 255, 0.1) 4px
+        );
 }
 
 .intro-content {
@@ -276,17 +347,24 @@ ul {
     border-radius: 10px;
     width: 90%;
     max-width: 600px;
+    box-shadow: 0 0 30px rgba(255, 0, 255, 0.3),
+                0 0 60px rgba(0, 255, 255, 0.2);
+    border: 1px solid rgba(255, 0, 255, 0.2);
 }
 
 .intro-content h1 {
     font-size: 2.5em;
     margin-bottom: 10px;
+    color: var(--primary);
+    text-shadow: 0 0 10px rgba(255, 0, 255, 0.8);
+    letter-spacing: 2px;
 }
 
 .intro-content h2 {
     font-size: 1.5em;
     color: var(--secondary);
     margin-bottom: 20px;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.7);
 }
 
 .game-options {
@@ -303,6 +381,7 @@ ul {
 .option-group label {
     margin-bottom: 10px;
     font-size: 18px;
+    color: var(--secondary);
 }
 
 select {
@@ -312,12 +391,221 @@ select {
     color: var(--text-primary);
     border: 1px solid var(--primary);
     border-radius: 5px;
+    font-family: 'Aldrich', sans-serif;
 }
 
 #start-game-btn {
     padding: 15px 30px;
     font-size: 18px;
-    background-color: var(--accent);
+    background: linear-gradient(to right, var(--primary), var(--purple-glow));
+    box-shadow: 0 0 15px rgba(153, 0, 255, 0.6);
+    color: white;
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.8);
+    letter-spacing: 1px;
+    transform-style: preserve-3d;
+    transition: all 0.3s;
+}
+
+#start-game-btn:hover {
+    background: linear-gradient(to right, var(--purple-glow), var(--primary));
+    box-shadow: 0 0 20px rgba(153, 0, 255, 0.8);
+    transform: translateY(-3px);
+}
+
+/* Heat level indicators */
+#heat {
+    display: flex;
+    align-items: center;
+}
+
+#heat-value {
+    margin-left: 5px;
+    font-weight: bold;
+}
+
+.high-heat {
+    color: var(--danger);
+    animation: pulse 2s infinite;
+    text-shadow: 0 0 8px rgba(255, 90, 90, 0.8);
+}
+
+.medium-heat {
+    color: var(--warning);
+    text-shadow: 0 0 8px rgba(255, 255, 0, 0.6);
+}
+
+@keyframes pulse {
+    0% { opacity: 1; text-shadow: 0 0 8px rgba(255, 90, 90, 0.8); }
+    50% { opacity: 0.6; text-shadow: 0 0 15px rgba(255, 90, 90, 1); }
+    100% { opacity: 1; text-shadow: 0 0 8px rgba(255, 90, 90, 0.8); }
+}
+
+/* Storage properties styling */
+.storage-option {
+    background-color: var(--background-dark);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border-left: 3px solid var(--secondary);
+}
+
+.storage-option.disabled {
+    opacity: 0.6;
+    border-left-color: #555;
+}
+
+.storage-option h4 {
+    margin-top: 0;
+    color: var(--accent);
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.5);
+}
+
+.requirement-note {
+    color: var(--warning);
+    font-style: italic;
+}
+
+/* Bank accounts styling */
+.account-item {
+    background-color: var(--background-dark);
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    border-left: 3px solid var(--highlight);
+}
+
+.account-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.account-header h4 {
+    color: var(--highlight);
+    text-shadow: 0 0 5px rgba(57, 255, 20, 0.5);
+    margin: 0;
+}
+
+.account-balance {
+    font-weight: bold;
+    color: var(--secondary);
+}
+
+.account-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.locked-account {
+    opacity: 0.7;
+    border-left-color: #555;
+}
+
+/* Police encounter styling */
+.police-encounter {
+    color: var(--text-primary);
+}
+
+.heat-level {
+    margin-bottom: 20px;
+}
+
+.heat-value {
+    color: var(--warning);
+    font-weight: bold;
+    text-shadow: 0 0 5px rgba(255, 255, 0, 0.6);
+}
+
+.encounter-options {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.encounter-options .option {
+    flex: 1 0 45%;
+    background-color: var(--background-dark);
+    padding: 15px;
+    border-radius: 5px;
+    border: 1px solid rgba(0, 255, 255, 0.1);
+}
+
+.encounter-options .option h4 {
+    color: var(--secondary);
+    text-shadow: 0 0 5px rgba(0, 255, 255, 0.5);
+    margin-top: 0;
+}
+
+.police-result {
+    text-align: center;
+}
+
+.police-result p {
+    margin-bottom: 20px;
+    font-size: 1.1em;
+}
+
+/* Extras */
+.market-event {
+    border-left: 3px solid var(--warning);
+    padding-left: 8px;
+}
+
+.police-event {
+    border-left: 3px solid var(--danger);
+    padding-left: 8px;
+}
+
+/* Game over styling */
+.final-stats {
+    background-color: var(--background-dark);
+    padding: 15px;
+    border-radius: 5px;
+    margin: 20px 0;
+    border: 1px solid rgba(255, 0, 255, 0.2);
+}
+
+.net-worth {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--secondary);
+    margin-top: 10px;
+    padding-top: 10px;
+    border-top: 1px solid #555;
+    text-shadow: 0 0 8px rgba(0, 255, 255, 0.5);
+}
+
+#new-game-btn {
+    background: linear-gradient(to right, var(--accent), var(--highlight));
+    padding: 12px 20px;
+    font-size: 16px;
+    margin: 10px auto;
+    display: block;
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.4);
+}
+
+#new-game-btn:hover {
+    background: linear-gradient(to right, var(--highlight), var(--accent));
+    box-shadow: 0 0 20px rgba(57, 255, 20, 0.6);
+}
+
+/* Custom scrollbar for retro feel */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--background-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(to bottom, var(--primary), var(--secondary));
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(to bottom, var(--secondary), var(--primary));
 }
 
 /* Responsive adjustments */
@@ -336,4 +624,28 @@ select {
         align-items: flex-start;
         gap: 10px;
     }
+    
+    .encounter-options {
+        flex-direction: column;
+    }
+    
+    .encounter-options .option {
+        flex: 1 0 100%;
+    }
+}
+
+/* Add a grid overlay background effect for main game container */
+#game-container::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    background-image: 
+        linear-gradient(rgba(153, 0, 255, 0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(153, 0, 255, 0.03) 1px, transparent 1px);
+    background-size: 20px 20px;
+    z-index: -1;
 }
