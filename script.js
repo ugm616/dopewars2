@@ -503,6 +503,294 @@ const WORLD_MAP = {
     }
 };
 
+// Initialize the game state
+let gameState = {
+    cash: GAME.INITIAL.CASH,
+    debt: GAME.INITIAL.DEBT,
+    day: 1,
+    dayLimit: 30, // Will be set based on user choice
+    rank: GAME.RANKS[0],
+    currentCity: "New York",
+    currentDistrict: "Bronx",
+    inventory: {
+        space: {
+            used: 0,
+            max: GAME.INITIAL.INVENTORY_SPACE
+        },
+        items: {}  // Will be filled with { productName: quantity }
+    },
+    market: {},    // Will be filled with current prices
+    events: {
+        drugNews: [],
+        playerActions: []
+    },
+    bankAccount: 0,
+    netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
+};
+
+// DOM references
+let DOM = {};
+
+// Game Save/Load System
+
+// Function to save the current game state to localStorage
+function saveGame() {
+    try {
+        // Convert the gameState object to a JSON string
+        const gameStateJSON = JSON.stringify(gameState);
+        
+        // Save the game state to localStorage
+        localStorage.setItem('dopeWarsGameSave', gameStateJSON);
+        
+        // Save the world map state (city unlocks, etc.)
+        const worldMapJSON = JSON.stringify(WORLD_MAP);
+        localStorage.setItem('dopeWarsWorldMapSave', worldMapJSON);
+        
+        // Add a timestamp to the save
+        localStorage.setItem('dopeWarsGameSaveTime', new Date().toLocaleString());
+        
+        // Show confirmation to the player
+        addPlayerActionEvent("Game saved successfully.");
+        
+        return true;
+    } catch (error) {
+        console.error("Error saving game:", error);
+        addPlayerActionEvent("Failed to save game. Error: " + error.message);
+        return false;
+    }
+}
+
+// Function to load a saved game from localStorage
+function loadGame() {
+    try {
+        // Get the saved game state from localStorage
+        const gameStateJSON = localStorage.getItem('dopeWarsGameSave');
+        const worldMapJSON = localStorage.getItem('dopeWarsWorldMapSave');
+        
+        // Check if save exists
+        if (!gameStateJSON || !worldMapJSON) {
+            console.log("No saved game found.");
+            return false;
+        }
+        
+        // Parse the JSON back to objects
+        const savedGameState = JSON.parse(gameStateJSON);
+        const savedWorldMap = JSON.parse(worldMapJSON);
+        
+        // Restore the saved game state
+        gameState = savedGameState;
+        
+        // Restore the world map state
+        for (const city in savedWorldMap) {
+            if (WORLD_MAP[city]) {
+                WORLD_MAP[city].unlocked = savedWorldMap[city].unlocked;
+                if (savedWorldMap[city].unlockCost !== undefined) {
+                    WORLD_MAP[city].unlockCost = savedWorldMap[city].unlockCost;
+                }
+                if (savedWorldMap[city].specialFeature !== undefined) {
+                    WORLD_MAP[city].specialFeature = savedWorldMap[city].specialFeature;
+                }
+                if (savedWorldMap[city].policeActivity !== undefined) {
+                    WORLD_MAP[city].policeActivity = savedWorldMap[city].policeActivity;
+                }
+                if (savedWorldMap[city].marketVolatility !== undefined) {
+                    WORLD_MAP[city].marketVolatility = savedWorldMap[city].marketVolatility;
+                }
+                if (savedWorldMap[city].productModifiers !== undefined) {
+                    WORLD_MAP[city].productModifiers = savedWorldMap[city].productModifiers;
+                }
+                // Copy any other properties we need to preserve
+                if (savedWorldMap[city].policeCorruption !== undefined) {
+                    WORLD_MAP[city].policeCorruption = savedWorldMap[city].policeCorruption;
+                }
+                if (savedWorldMap[city].gangWarChance !== undefined) {
+                    WORLD_MAP[city].gangWarChance = savedWorldMap[city].gangWarChance;
+                }
+            }
+        }
+        
+        // Update all game displays
+        updatePlayerStats();
+        updateLocationDisplay();
+        updateInventoryDisplay();
+        updateMarketDisplay();
+        updateUnlockedCities();
+        updateHeatDisplay();
+        
+        // Show confirmation to the player
+        addPlayerActionEvent("Game loaded successfully.");
+        
+        return true;
+    } catch (error) {
+        console.error("Error loading game:", error);
+        addPlayerActionEvent("Failed to load game. Error: " + error.message);
+        return false;
+    }
+}
+
+// Function to check if a saved game exists
+function hasSavedGame() {
+    return localStorage.getItem('dopeWarsGameSave') !== null;
+}
+
+// Function to get the timestamp of the saved game
+function getSaveGameTime() {
+    return localStorage.getItem('dopeWarsGameSaveTime') || "Unknown";
+}
+
+// Function to delete the saved game
+function deleteSavedGame() {
+    localStorage.removeItem('dopeWarsGameSave');
+    localStorage.removeItem('dopeWarsWorldMapSave');
+    localStorage.removeItem('dopeWarsGameSaveTime');
+}
+
+// Add save/load/new game buttons to the UI
+function addSaveLoadButtons() {
+    // Add to the DOM cache
+    DOM.saveGameBtn = document.createElement('button');
+    DOM.saveGameBtn.id = 'save-game-btn';
+    DOM.saveGameBtn.textContent = 'Save Game';
+    DOM.saveGameBtn.className = 'action-btn';
+    
+    DOM.loadGameBtn = document.createElement('button');
+    DOM.loadGameBtn.id = 'load-game-btn';
+    DOM.loadGameBtn.textContent = 'Load Game';
+    DOM.loadGameBtn.className = 'action-btn';
+    
+    DOM.newGameBtn = document.createElement('button');
+    DOM.newGameBtn.id = 'new-game-btn';
+    DOM.newGameBtn.textContent = 'New Game';
+    DOM.newGameBtn.className = 'action-btn';
+    
+    // Get the actions panel and add buttons
+    const actionsPanel = document.getElementById('actions-panel');
+    actionsPanel.appendChild(DOM.saveGameBtn);
+    actionsPanel.appendChild(DOM.loadGameBtn);
+    actionsPanel.appendChild(DOM.newGameBtn);
+    
+    // Add event listeners
+    DOM.saveGameBtn.addEventListener('click', saveGame);
+    DOM.loadGameBtn.addEventListener('click', showLoadGameDialog);
+    DOM.newGameBtn.addEventListener('click', showNewGameDialog);
+    
+    // Add save/load buttons to the intro screen
+    addContinueButtonToIntroScreen();
+}
+
+// Function to add Continue button to intro screen
+function addContinueButtonToIntroScreen() {
+    const introOptions = document.querySelector('.game-options');
+    if (introOptions && hasSavedGame()) {
+        // Create continue game button
+        const continueBtn = document.createElement('button');
+        continueBtn.id = 'continue-game-btn';
+        continueBtn.textContent = `Continue Saved Game (${getSaveGameTime()})`;
+        continueBtn.className = 'intro-btn';
+        
+        // Insert it before the start game button
+        const startBtn = document.getElementById('start-game-btn');
+        if (startBtn) {
+            introOptions.insertBefore(continueBtn, startBtn);
+            introOptions.insertBefore(document.createElement('br'), startBtn);
+        } else {
+            introOptions.appendChild(continueBtn);
+        }
+        
+        // Add event listener
+        continueBtn.addEventListener('click', () => {
+            const success = loadGame();
+            if (success) {
+                DOM.introScreen.style.display = 'none';
+                DOM.gameContainer.style.display = 'block';
+            }
+        });
+    }
+}
+
+// Show dialog confirming load saved game
+function showLoadGameDialog() {
+    if (!hasSavedGame()) {
+        addPlayerActionEvent("No saved game found.");
+        return;
+    }
+    
+    DOM.modalTitle.textContent = "Load Game";
+    
+    let content = `
+        <div class="load-game-modal">
+            <p>Are you sure you want to load your saved game from ${getSaveGameTime()}?</p>
+            <p>Any unsaved progress in your current game will be lost.</p>
+            
+            <div class="modal-buttons">
+                <button id="confirm-load">Yes, Load Game</button>
+                <button id="cancel-load">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('confirm-load').addEventListener('click', () => {
+        const success = loadGame();
+        if (success) {
+            closeModal();
+        }
+    });
+    
+    document.getElementById('cancel-load').addEventListener('click', () => {
+        closeModal();
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Show dialog confirming new game
+function showNewGameDialog() {
+    DOM.modalTitle.textContent = "New Game";
+    
+    let content = `
+        <div class="new-game-modal">
+            <p>Are you sure you want to start a new game?</p>
+            <p>Your current game progress will be lost.</p>
+            ${hasSavedGame() ? '<p>Your saved game will also be deleted.</p>' : ''}
+            
+            <div class="modal-buttons">
+                <button id="confirm-new-game">Yes, Start New Game</button>
+                <button id="cancel-new-game">Cancel</button>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('confirm-new-game').addEventListener('click', () => {
+        // Delete any saved game
+        deleteSavedGame();
+        
+        // Return to intro screen
+        closeModal();
+        DOM.introScreen.style.display = 'flex';
+        DOM.gameContainer.style.display = 'none';
+        
+        // Reset any continue button
+        const continueBtn = document.getElementById('continue-game-btn');
+        if (continueBtn) {
+            continueBtn.remove();
+        }
+    });
+    
+    document.getElementById('cancel-new-game').addEventListener('click', () => {
+        closeModal();
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
 // Function to update WORLD_MAP with the new city progression data
 function updateWorldMapWithProgression() {
     for (const city in WORLD_MAP) {
@@ -569,6 +857,28 @@ function unlockCity(city) {
     addDrugNewsEvent(`New market opened: ${city} is now available with ${WORLD_MAP[city].specialFeature}.`);
     
     return true;
+}
+
+// Function to hide unlocked cities panel
+function hideUnlockedCitiesPanel() {
+    // Hide the unlocked cities panel but keep the right panel and its buttons
+    const unlockedCitiesPanel = document.getElementById('unlocked-cities-panel');
+    if (unlockedCitiesPanel) {
+        unlockedCitiesPanel.style.display = 'none';
+    }
+    
+    // Adjust the right panel to have more space for the action buttons
+    const rightPanel = document.getElementById('right-panel');
+    if (rightPanel) {
+        rightPanel.style.display = 'flex';
+        rightPanel.style.flexDirection = 'column';
+    }
+    
+    // Make the actions panel take full height
+    const actionsPanel = document.getElementById('actions-panel');
+    if (actionsPanel) {
+        actionsPanel.style.flex = '1';
+    }
 }
 
 // Enhanced travel options modal that shows unlock costs
@@ -820,6 +1130,1081 @@ function advanceDayForTravel(isCityTravel = false) {
     updateHeatDisplay();
 }
 
+// Initialize the game
+document.addEventListener('DOMContentLoaded', function() {
+    // Gather all the DOM references we'll need
+    cacheDOM();
+    
+    // Add the city styles to the page
+    addCityStyles();
+    
+    // Set up event listeners
+    setupEventListeners();
+    
+    // Show intro screen first
+    DOM.introScreen.style.display = 'flex';
+    DOM.gameContainer.style.display = 'none';
+});
+
+// Cache DOM elements for later use
+function cacheDOM() {
+    DOM = {
+        // Main containers
+        gameContainer: document.getElementById('game-container'),
+        introScreen: document.getElementById('intro-screen'),
+        
+        // Player stats
+        cashValue: document.getElementById('cash-value'),
+        debtValue: document.getElementById('debt-value'),
+        dayValue: document.getElementById('day-value'),
+        dayLimit: document.getElementById('day-limit'),
+        rankValue: document.getElementById('rank-value'),
+        
+        // Location elements
+        currentCity: document.getElementById('current-city'),
+        currentDistrict: document.getElementById('current-district'),
+        travelBtn: document.getElementById('travel-btn'),
+        
+        // Inventory
+        spaceUsed: document.getElementById('space-used'),
+        maxSpace: document.getElementById('max-space'),
+        inventoryList: document.getElementById('inventory-list'),
+        
+        // Market
+        marketList: document.getElementById('market-list'),
+        
+        // Events logs
+        drugNewsLog: document.getElementById('drug-news-log'),
+        playerActionsLog: document.getElementById('player-actions-log'),
+        eventsTabs: document.querySelectorAll('.tab-button'),
+        eventsTabsContent: document.querySelectorAll('.events-tab'),
+        
+        // Action buttons
+        loanSharkBtn: document.getElementById('loan-shark-btn'),
+        bankBtn: document.getElementById('bank-btn'),
+        endDayBtn: document.getElementById('end-day-btn'),
+        
+        // Cities list
+        citiesList: document.getElementById('cities-list'),
+        
+        // Modal elements
+        modalContainer: document.getElementById('modal-container'),
+        modalTitle: document.getElementById('modal-title'),
+        modalContent: document.getElementById('modal-content'),
+        modalClose: document.getElementById('modal-close'),
+        
+        // Game setup
+        gameDays: document.getElementById('game-days'),
+        startGameBtn: document.getElementById('start-game-btn')
+    };
+}
+
+// Set up all event listeners
+function setupEventListeners() {
+    // Start game button
+    DOM.startGameBtn.addEventListener('click', startGame);
+    
+    // Travel button
+    DOM.travelBtn.addEventListener('click', showEnhancedTravelOptions);
+    
+    // End day button - now with autosave
+    DOM.endDayBtn.addEventListener('click', enhancedEndDayWithAutosave);
+    
+    // Loan shark button
+    DOM.loanSharkBtn.addEventListener('click', showLoanSharkModal);
+    
+    // Bank button
+    DOM.bankBtn.addEventListener('click', showEnhancedBankModal);
+    
+    // Modal close button
+    DOM.modalClose.addEventListener('click', closeModal);
+    
+    // Event tabs
+    DOM.eventsTabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // Remove active class from all tabs and contents
+            DOM.eventsTabs.forEach(t => t.classList.remove('active'));
+            DOM.eventsTabsContent.forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            tab.classList.add('active');
+            document.getElementById(tab.dataset.tab).classList.add('active');
+        });
+    });
+}
+
+// Start the game with the selected options
+function startGame() {
+    // Get the selected number of days
+    const selectedDays = DOM.gameDays.value;
+    gameState.dayLimit = selectedDays === 'infinite' ? Infinity : parseInt(selectedDays);
+    
+    // Update the UI
+    DOM.dayLimit.textContent = selectedDays === 'infinite' ? '∞' : selectedDays;
+    
+    // Initialize the game data
+    initializeGame();
+    
+    // Hide intro screen and show game
+    DOM.introScreen.style.display = 'none';
+    DOM.gameContainer.style.display = 'block';
+}
+
+// Initialize the game data and display
+function initializeGame() {
+    // Reset the game state to initial values
+    gameState = {
+        cash: GAME.INITIAL.CASH,
+        debt: GAME.INITIAL.DEBT,
+        day: 1,
+        dayLimit: gameState.dayLimit,
+        rank: GAME.RANKS[0],
+        currentCity: "New York",
+        currentDistrict: "Bronx",
+        inventory: {
+            space: {
+                used: 0,
+                max: GAME.INITIAL.INVENTORY_SPACE
+            },
+            items: {}
+        },
+        market: {},
+        events: {
+            drugNews: [],
+            playerActions: []
+        },
+        bankAccount: 0,
+        netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
+    };
+    
+    // Enhance gameState with new properties
+    enhanceGameState();
+    
+    // Initialize city system (apply progression data to world map)
+    initCitySystem();
+    
+    // Generate initial market prices using enhanced system
+    enhancedMarketPrices();
+    
+    // Update all displays
+    updatePlayerStats();
+    updateLocationDisplay();
+    updateInventoryDisplay();
+    updateMarketDisplay();
+    updateUnlockedCities();
+    
+    // Update UI with new elements
+    updateUI();
+    
+    // Set up enhanced event listeners
+    setupEnhancedEventListeners();
+    
+    // Add save/load buttons
+    addSaveLoadButtons();
+    
+    // Update heat display
+    updateHeatDisplay();
+    
+    // Hide unlocked cities panel
+    hideUnlockedCitiesPanel();
+    
+    // Add initial event
+    addPlayerActionEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
+    addDrugNewsEvent("The local market is active. Check prices and start dealing!");
+}
+
+// Function to initialize the city system
+function initCitySystem() {
+    // Apply progression data to world map
+    updateWorldMapWithProgression();
+    
+    // Update displays
+    updateUnlockedCities();
+}
+
+// Enhance gameState with new properties
+function enhanceGameState() {
+    // Add storage properties
+    gameState.storage = {
+        ownedProperties: {},
+        totalCapacity: GAME.INITIAL.INVENTORY_SPACE
+    };
+    
+    // Add police properties
+    gameState.police = {
+        heatLevel: 0,
+        lastEncounter: 0,
+        bribesGiven: 0
+    };
+    
+    // Add enhanced banking
+    gameState.banking = {
+        accounts: {
+            "Standard Account": {
+                balance: 0,
+                unlocked: true
+            }
+        },
+        totalSavings: 0
+    };
+}
+
+// Update UI with new elements
+function updateUI() {
+    // Add Storage button to actions panel
+    const actionsPanel = document.getElementById('actions-panel');
+    if (actionsPanel) {
+        const storageBtn = document.createElement('button');
+        storageBtn.id = 'storage-btn';
+        storageBtn.textContent = 'Storage Options';
+        actionsPanel.appendChild(storageBtn);
+        
+        // Add to DOM cache
+        DOM.storageBtn = storageBtn;
+        
+        // Add event listener
+        storageBtn.addEventListener('click', showStorageOptionsModal);
+    }
+    
+    // Add Heat Level indicator to player stats
+    const playerStats = document.getElementById('player-stats');
+    if (playerStats) {
+        const heatDiv = document.createElement('div');
+        heatDiv.id = 'heat';
+        heatDiv.innerHTML = 'Heat: <span id="heat-value">0</span>';
+        playerStats.appendChild(heatDiv);
+        
+        // Update DOM cache
+        DOM.heatValue = document.getElementById('heat-value');
+    }
+}
+
+// Update heat display
+function updateHeatDisplay() {
+    if (!DOM.heatValue || !gameState.police) return;
+    
+    DOM.heatValue.textContent = Math.round(gameState.police.heatLevel);
+    
+    // Add visual indicator for heat level
+    if (gameState.police.heatLevel > 70) {
+        DOM.heatValue.className = 'high-heat';
+    } else if (gameState.police.heatLevel > 40) {
+        DOM.heatValue.className = 'medium-heat';
+    } else {
+        DOM.heatValue.className = '';
+    }
+}
+
+// Set up enhanced event listeners
+function setupEnhancedEventListeners() {
+    // This function can be used to add any additional event listeners for new features
+}
+
+// Show loan shark modal
+function showLoanSharkModal() {
+    DOM.modalTitle.textContent = "Loan Shark";
+    
+    let content = `
+        <div class="loan-shark-modal">
+            <p>Current debt: $${formatMoney(gameState.debt)}</p>
+            <p>Interest rate: ${GAME.INITIAL.INTEREST_RATE * 100}% per day</p>
+            
+            <div class="loan-options">
+                <div class="borrow-section">
+                    <h3>Borrow Money</h3>
+                    <div class="input-group">
+                        <label for="borrow-amount">Amount to borrow:</label>
+                        <input type="number" id="borrow-amount" min="100" step="100" value="1000">
+                    </div>
+                    <button id="confirm-borrow">Borrow</button>
+                </div>
+                
+                <div class="repay-section">
+                    <h3>Repay Debt</h3>
+                    <div class="input-group">
+                        <label for="repay-amount">Amount to repay:</label>
+                        <input type="number" id="repay-amount" min="100" max="${gameState.cash}" step="100" value="${Math.min(1000, gameState.cash)}">
+                    </div>
+                    <button id="confirm-repay" ${gameState.cash <= 0 ? 'disabled' : ''}>Repay</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('confirm-borrow').addEventListener('click', () => {
+        const amount = parseInt(document.getElementById('borrow-amount').value) || 0;
+        if (amount >= 100) {
+            borrowMoney(amount);
+            closeModal();
+        }
+    });
+    
+    document.getElementById('confirm-repay').addEventListener('click', () => {
+        const amount = parseInt(document.getElementById('repay-amount').value) || 0;
+        if (amount > 0 && amount <= gameState.cash) {
+            repayDebt(amount);
+            closeModal();
+        }
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Borrow money from the loan shark
+function borrowMoney(amount) {
+    gameState.cash += amount;
+    gameState.debt += amount;
+    
+    updatePlayerStats();
+    updateUnlockedCities(); // Check if player can unlock new cities now
+    addPlayerActionEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+}
+
+// Repay debt to the loan shark
+function repayDebt(amount) {
+    const actualRepayment = Math.min(amount, gameState.debt);
+    
+    gameState.cash -= actualRepayment;
+    gameState.debt -= actualRepayment;
+    
+    updatePlayerStats();
+    
+    addPlayerActionEvent(`Repaid $${formatMoney(actualRepayment)} to the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
+    
+    if (gameState.debt === 0) {
+        addPlayerActionEvent("You've paid off your debt completely!");
+    }
+}
+
+// Update player stats display
+function updatePlayerStats() {
+    // Update cash, debt, day, and rank displays
+    DOM.cashValue.textContent = formatMoney(gameState.cash);
+    DOM.debtValue.textContent = formatMoney(gameState.debt);
+    DOM.dayValue.textContent = gameState.day;
+    
+    // Calculate current net worth for rank determination
+    let inventoryValue = calculateInventoryValue();
+    let bankValue = gameState.bankAccount;
+    
+    // Use banking system if available
+    if (gameState.banking && gameState.banking.totalSavings !== undefined) {
+        bankValue = gameState.banking.totalSavings;
+    }
+    
+    // Calculate net worth
+    gameState.netWorth = gameState.cash + inventoryValue + bankValue - gameState.debt;
+    
+    // Determine player rank based on net worth
+    for (let i = GAME.RANKS.length - 1; i >= 0; i--) {
+        if (gameState.netWorth >= GAME.RANKS[i].minWealth) {
+            // Only update if rank has changed
+            if (gameState.rank.name !== GAME.RANKS[i].name) {
+                const oldRank = gameState.rank;
+                gameState.rank = GAME.RANKS[i];
+                
+                // Show rank increase message if not the initial rank setup
+                if (oldRank.name !== GAME.RANKS[0].name || gameState.day > 1) {
+                    addPlayerActionEvent(`Rank increased to ${gameState.rank.name}!`);
+                }
+            }
+            break;
+        }
+    }
+    
+    // Update rank display
+    DOM.rankValue.textContent = gameState.rank.name;
+}
+
+// Calculate the total value of the player's inventory at current market prices
+function calculateInventoryValue() {
+    let total = 0;
+    
+    for (const productName in gameState.inventory.items) {
+        // Get the current market price if available
+        let price = gameState.market[productName];
+        
+        // If the product is not available in the current market, use its min price
+        if (!price) {
+            const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
+            price = productInfo ? productInfo.minPrice : 0;
+        }
+        
+        total += price * gameState.inventory.items[productName];
+    }
+    
+    return total;
+}
+
+// Update inventory display
+function updateInventoryDisplay() {
+    // Update space usage
+    DOM.spaceUsed.textContent = gameState.inventory.space.used;
+    DOM.maxSpace.textContent = gameState.inventory.space.max;
+    
+    // Clear inventory list
+    DOM.inventoryList.innerHTML = '';
+    
+    // Check if inventory is empty
+    if (Object.keys(gameState.inventory.items).length === 0) {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4; // Span across all columns
+        emptyCell.classList.add('empty-message');
+        emptyCell.textContent = 'No items in inventory';
+        emptyRow.appendChild(emptyCell);
+        DOM.inventoryList.appendChild(emptyRow);
+        return;
+    }
+    
+    // Add each inventory item
+    for (const productName in gameState.inventory.items) {
+        const quantity = gameState.inventory.items[productName];
+        const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
+        const weight = productInfo ? productInfo.weight : 1;
+        
+        // Get current market price
+        const currentPrice = gameState.market[productName] || '--';
+        
+        // Create table row
+        const row = document.createElement('tr');
+        row.classList.add('inventory-item');
+        
+        // Product name cell (column 1)
+        const nameCell = document.createElement('td');
+        nameCell.classList.add('item-name');
+        nameCell.textContent = `${productName} (${weight})`;
+        
+        // Quantity cell (column 2)
+        const quantityCell = document.createElement('td');
+        quantityCell.classList.add('item-quantity');
+        quantityCell.textContent = quantity;
+        
+        // Price cell (column 3)
+        const priceCell = document.createElement('td');
+        priceCell.classList.add('item-price');
+        priceCell.textContent = currentPrice !== '--' ? `$${formatMoney(currentPrice)}` : 'N/A';
+        
+        // Action cell (column 4)
+        const actionCell = document.createElement('td');
+        actionCell.classList.add('item-action');
+        
+        const sellBtn = document.createElement('button');
+        sellBtn.classList.add('sell-btn');
+        sellBtn.textContent = 'Sell';
+        sellBtn.dataset.product = productName;
+        sellBtn.disabled = currentPrice === '--'; // Disable if no market price
+        
+        sellBtn.addEventListener('click', () => {
+            showSellModal(productName, quantity);
+        });
+        
+        actionCell.appendChild(sellBtn);
+        
+        // Add all cells to the row
+        row.appendChild(nameCell);
+        row.appendChild(quantityCell);
+        row.appendChild(priceCell);
+        row.appendChild(actionCell);
+        
+        // Add row to the inventory list
+        DOM.inventoryList.appendChild(row);
+    }
+}
+
+// Show modal for selling a product
+function showSellModal(productName, maxQuantity) {
+    // Check if the product has a market price
+    if (!gameState.market[productName]) {
+        addPlayerActionEvent(`You can't sell ${productName} here. Try another location.`);
+        return;
+    }
+    
+    const price = gameState.market[productName];
+    
+    DOM.modalTitle.textContent = `Sell ${productName}`;
+    
+    let content = `
+        <div class="sell-modal">
+            <p>Current Price: $${formatMoney(price)}</p>
+            <p>Quantity Available: ${maxQuantity}</p>
+            
+            <div class="quantity-input">
+                <label for="sell-quantity">Quantity to sell:</label>
+                <input type="number" id="sell-quantity" min="1" max="${maxQuantity}" value="1">
+            </div>
+            
+            <p>Total value: $<span id="sell-total">${formatMoney(price)}</span></p>
+            
+            <div class="sell-actions">
+                <button id="max-sell">Sell Max</button>
+                <button id="confirm-sell">Confirm Sale</button>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    const quantityInput = document.getElementById('sell-quantity');
+    const sellTotal = document.getElementById('sell-total');
+    
+    quantityInput.addEventListener('input', () => {
+        const quantity = parseInt(quantityInput.value) || 1;
+        sellTotal.textContent = formatMoney(price * quantity);
+    });
+    
+    document.getElementById('max-sell').addEventListener('click', () => {
+        quantityInput.value = maxQuantity;
+        sellTotal.textContent = formatMoney(price * maxQuantity);
+    });
+    
+    document.getElementById('confirm-sell').addEventListener('click', () => {
+        const quantity = parseInt(quantityInput.value) || 0;
+        if (quantity > 0 && quantity <= maxQuantity) {
+            sellProduct(productName, quantity);
+            closeModal();
+        }
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Update location display
+function updateLocationDisplay() {
+    DOM.currentCity.textContent = gameState.currentCity;
+    DOM.currentDistrict.textContent = gameState.currentDistrict;
+}
+
+// Update market display
+function updateMarketDisplay() {
+    // Clear market list
+    DOM.marketList.innerHTML = '';
+    
+    // Check if market is empty
+    if (Object.keys(gameState.market).length === 0) {
+        const emptyRow = document.createElement('tr');
+        const emptyCell = document.createElement('td');
+        emptyCell.colSpan = 4; // Span across all columns
+        emptyCell.classList.add('empty-message');
+        emptyCell.textContent = 'No products available';
+        emptyRow.appendChild(emptyCell);
+        DOM.marketList.appendChild(emptyRow);
+        return;
+    }
+    
+    // Add each market product
+    for (const productName in gameState.market) {
+        const price = gameState.market[productName];
+        const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
+        const weight = productInfo ? productInfo.weight : 1;
+        
+        // Get inventory quantity if any
+        const inventoryQuantity = gameState.inventory.items[productName] || 0;
+        
+        // Create table row
+        const row = document.createElement('tr');
+        row.classList.add('market-item');
+        
+        // Product name cell (column 1)
+        const nameCell = document.createElement('td');
+        nameCell.classList.add('product-name');
+        nameCell.textContent = `${productName} (${weight})`;
+        
+        // Price cell (column 2)
+        const priceCell = document.createElement('td');
+        priceCell.classList.add('product-price');
+        priceCell.textContent = `$${formatMoney(price)}`;
+        
+        // Inventory cell (column 3)
+        const inventoryCell = document.createElement('td');
+        inventoryCell.classList.add('product-inventory');
+        inventoryCell.textContent = inventoryQuantity;
+        
+        // Action cell (column 4)
+        const actionCell = document.createElement('td');
+        actionCell.classList.add('product-action');
+        
+        const buyBtn = document.createElement('button');
+        buyBtn.classList.add('buy-btn');
+        buyBtn.textContent = 'Buy';
+        buyBtn.dataset.product = productName;
+        
+        // Disable buy button if no space
+        const freeSpace = gameState.inventory.space.max - gameState.inventory.space.used;
+        if (freeSpace < weight) {
+            buyBtn.disabled = true;
+            buyBtn.title = 'Not enough inventory space';
+        }
+        
+        buyBtn.addEventListener('click', () => {
+            showBuyModal(productName, price, weight);
+        });
+        
+        actionCell.appendChild(buyBtn);
+        
+        // Add all cells to the row
+        row.appendChild(nameCell);
+        row.appendChild(priceCell);
+        row.appendChild(inventoryCell);
+        row.appendChild(actionCell);
+        
+        // Add row to the market list
+        DOM.marketList.appendChild(row);
+    }
+}
+
+// Show modal for buying a product
+function showBuyModal(productName, price, weight) {
+    const freeSpace = gameState.inventory.space.max - gameState.inventory.space.used;
+    const maxQuantity = Math.floor(freeSpace / weight);
+    const maxAffordable = Math.floor(gameState.cash / price);
+    const maxPossible = Math.min(maxQuantity, maxAffordable);
+    
+    if (maxPossible <= 0) {
+        if (maxQuantity <= 0) {
+            addPlayerActionEvent("Not enough inventory space to buy this product.");
+        } else {
+            addPlayerActionEvent("You don't have enough cash to buy this product.");
+        }
+        return;
+    }
+    
+    DOM.modalTitle.textContent = `Buy ${productName}`;
+    
+    let content = `
+        <div class="buy-modal">
+            <p>Price: $${formatMoney(price)}</p>
+            <p>Weight per unit: ${weight}</p>
+            <p>Cash available: $${formatMoney(gameState.cash)}</p>
+            <p>Space available: ${freeSpace}/${gameState.inventory.space.max}</p>
+            
+            <div class="quantity-input">
+                <label for="buy-quantity">Quantity to buy:</label>
+                <input type="number" id="buy-quantity" min="1" max="${maxPossible}" value="1">
+            </div>
+            
+            <p>Total cost: $<span id="buy-total">${formatMoney(price)}</span></p>
+            <p>Weight: <span id="buy-weight">${weight}</span>/${freeSpace}</p>
+            
+            <div class="buy-actions">
+                <button id="max-buy">Buy Max</button>
+                <button id="confirm-buy">Confirm Purchase</button>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    const quantityInput = document.getElementById('buy-quantity');
+    const buyTotal = document.getElementById('buy-total');
+    const buyWeight = document.getElementById('buy-weight');
+    
+    quantityInput.addEventListener('input', () => {
+        const quantity = parseInt(quantityInput.value) || 1;
+        buyTotal.textContent = formatMoney(price * quantity);
+        buyWeight.textContent = weight * quantity;
+    });
+    
+    document.getElementById('max-buy').addEventListener('click', () => {
+        quantityInput.value = maxPossible;
+        buyTotal.textContent = formatMoney(price * maxPossible);
+        buyWeight.textContent = weight * maxPossible;
+    });
+    
+    document.getElementById('confirm-buy').addEventListener('click', () => {
+        const quantity = parseInt(quantityInput.value) || 0;
+        if (quantity > 0 && quantity <= maxPossible) {
+            buyProduct(productName, quantity);
+            closeModal();
+        }
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Random event for price spike
+function priceSpike() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Only apply if product is in market
+    if (gameState.market[randomProduct]) {
+        // Get the current price
+        const currentPrice = gameState.market[randomProduct];
+        
+        // Increase price by 50-150%
+        const spikeMultiplier = 1.5 + Math.random();
+        const newPrice = Math.round(currentPrice * spikeMultiplier);
+        
+        // Set the new price
+        gameState.market[randomProduct] = newPrice;
+        
+        // Add event
+        addDrugNewsEvent(`💰 Price spike! ${randomProduct} prices have risen to $${formatMoney(newPrice)} due to increased demand.`);
+    }
+}
+
+// Random event for product scarcity
+function productScarcity() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Remove the product from market
+    if (gameState.market[randomProduct]) {
+        delete gameState.market[randomProduct];
+        
+        // Add event
+        addDrugNewsEvent(`🚫 ${randomProduct} has become temporarily unavailable in ${gameState.currentCity}, ${gameState.currentDistrict} due to supply issues.`);
+    }
+}
+
+// Random event for police bust
+function policeBust() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Only apply if product is in market
+    if (gameState.market[randomProduct]) {
+        // Increase price due to reduced supply
+        const bustMultiplier = 1.3 + (Math.random() * 0.7);  // 1.3-2.0x price increase
+        gameState.market[randomProduct] = Math.round(gameState.market[randomProduct] * bustMultiplier);
+        
+        // Increase heat level
+        if (gameState.police) {
+            gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + 10);
+            updateHeatDisplay();
+        }
+        
+        // Add event
+        addDrugNewsEvent(`🚔 Police bust! ${randomProduct} prices have increased to $${formatMoney(gameState.market[randomProduct])} after a major bust in ${gameState.currentCity}.`);
+        addPlayerActionEvent(`Police presence has increased. Your heat level is now ${Math.round(gameState.police.heatLevel)}.`);
+    }
+}
+
+// Random event for bulk deal
+function bulkDeal() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Only apply if product is in market
+    if (gameState.market[randomProduct]) {
+        // Reduce price for bulk purchase opportunity
+        const discountMultiplier = 0.5 + (Math.random() * 0.2);  // 50-70% of original price
+        const discountedPrice = Math.round(gameState.market[randomProduct] * discountMultiplier);
+        
+        // Get product info for weight calculations
+        const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+        const weight = productInfo ? productInfo.weight : 1;
+        
+        // Calculate maximum affordable quantity based on cash and space
+        const freeSpace = gameState.inventory.space.max - gameState.inventory.space.used;
+        const maxQuantity = Math.floor(freeSpace / weight);
+        const maxAffordable = Math.floor(gameState.cash / discountedPrice);
+        const bulkQuantity = Math.min(maxQuantity, maxAffordable, 50);  // Cap bulk deals at 50 units
+        
+        // Only offer if player can afford and has space for at least 10 units
+        if (bulkQuantity >= 10) {
+            const totalCost = discountedPrice * bulkQuantity;
+            
+            // Show bulk deal modal
+            DOM.modalTitle.textContent = "Bulk Deal Opportunity";
+            
+            let content = `
+                <div class="bulk-deal-modal">
+                    <p>A supplier is offering a bulk deal on ${randomProduct}!</p>
+                    <p>Regular price: $${formatMoney(gameState.market[randomProduct])}</p>
+                    <p>Bulk deal price: $${formatMoney(discountedPrice)}</p>
+                    <p>Quantity: ${bulkQuantity}</p>
+                    <p>Total cost: $${formatMoney(totalCost)}</p>
+                    <p>This is a limited-time offer!</p>
+                    
+                    <div class="bulk-actions">
+                        <button id="accept-bulk">Accept Deal</button>
+                        <button id="reject-bulk">Reject</button>
+                    </div>
+                </div>
+            `;
+            
+            DOM.modalContent.innerHTML = content;
+            
+            // Add event listeners
+            document.getElementById('accept-bulk').addEventListener('click', () => {
+                // Process the purchase
+                gameState.cash -= totalCost;
+                
+                // Update inventory
+                if (!gameState.inventory.items[randomProduct]) {
+                    gameState.inventory.items[randomProduct] = 0;
+                }
+                gameState.inventory.items[randomProduct] += bulkQuantity;
+                
+                // Update inventory space
+                gameState.inventory.space.used += bulkQuantity * weight;
+                
+                // Increase heat level - bulk deals attract more attention
+                if (gameState.police) {
+                    const heatIncrease = Math.log10(totalCost) * 3;
+                    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
+                }
+                
+                // Update displays
+                updatePlayerStats();
+                updateInventoryDisplay();
+                updateHeatDisplay();
+                
+                // Add event
+                addPlayerActionEvent(`Purchased ${bulkQuantity} ${randomProduct} in a bulk deal for $${formatMoney(totalCost)}.`);
+                
+                closeModal();
+            });
+            
+            document.getElementById('reject-bulk').addEventListener('click', () => {
+                addPlayerActionEvent(`Rejected the bulk deal on ${randomProduct}.`);
+                closeModal();
+            });
+            
+            // Show the modal
+            DOM.modalContainer.classList.remove('hidden');
+            
+            // Add event to log
+            addDrugNewsEvent(`📦 Bulk deal opportunity: ${randomProduct} available at a discount!`);
+        }
+    }
+}
+
+// The following are asynchronous tasks that exist but need to be defined to avoid errors
+async function updateAsyncUI() {
+    // This function can be filled in later or left as a placeholder
+}
+
+// Update the display with asynchronous data
+async function updateAsyncDisplay() {
+    // This function can be filled in later or left as a placeholder
+}
+
+// Stress the server for bugged demos
+async function stressServer() {
+    // We don't need this function for the game, but define it to avoid errors
+    console.warn("stressServer called, but not implemented");
+}
+
+// Process user-input game data
+async function processGameData(data) {
+    // We don't need this function for the game, but define it to avoid errors
+    console.warn("processGameData called with:", data);
+}
+
+// Get game nature and generate appropriate description
+function gameNature() {
+    // This is a fictional function call that may have been referenced
+    return "A game about buying and selling products in various cities.";
+}
+
+// This is another placeholder for any function references that may be in the code
+function getBackground() {
+    // Return a default background
+    return "black";
+}
+
+// Function to show available storage options
+function showStorageOptionsModal() {
+    DOM.modalTitle.textContent = "Purchase Storage";
+    
+    let content = `
+        <div class="storage-modal">
+            <h3>Your Current Storage Capacity: ${gameState.storage.totalCapacity}</h3>
+            <p>Purchase properties to increase your storage capacity:</p>
+            
+            <div class="storage-options-list">
+    `;
+    
+    // List all available storage options
+    for (const [propertyName, property] of Object.entries(STORAGE_OPTIONS)) {
+        const alreadyOwned = gameState.storage.ownedProperties[propertyName];
+        const canAfford = gameState.cash >= property.cost;
+        const meetsRankRequirement = GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank;
+        const disabled = alreadyOwned || !canAfford || !meetsRankRequirement;
+        
+        content += `
+            <div class="storage-option ${disabled ? 'disabled' : ''}">
+                <h4>${propertyName} ${alreadyOwned ? '(Owned)' : ''}</h4>
+                <p>${property.description}</p>
+                <p>Storage Capacity: ${property.capacity}</p>
+                <p>Cost: $${formatMoney(property.cost)}</p>
+                ${!meetsRankRequirement ? 
+                    `<p class="requirement-note">Required Rank: ${GAME.RANKS[property.requiredRank].name}</p>` : ''}
+                <button 
+                    class="purchase-storage-btn" 
+                    data-property="${propertyName}" 
+                    ${disabled ? 'disabled' : ''}
+                >
+                    ${alreadyOwned ? 'Owned' : 'Purchase'}
+                </button>
+            </div>
+        `;
+    }
+    
+    content += `
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners to purchase buttons
+    document.querySelectorAll('.purchase-storage-btn:not([disabled])').forEach(button => {
+        button.addEventListener('click', () => {
+            purchaseStorage(button.dataset.property);
+            closeModal();
+        });
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Function to purchase storage
+function purchaseStorage(propertyName) {
+    const property = STORAGE_OPTIONS[propertyName];
+    
+    if (gameState.cash >= property.cost && 
+        !gameState.storage.ownedProperties[propertyName] &&
+        GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank) {
+        
+        // Deduct cash
+        gameState.cash -= property.cost;
+        
+        // Add to owned properties
+        gameState.storage.ownedProperties[propertyName] = true;
+        
+        // Increase total capacity
+        gameState.storage.totalCapacity += property.capacity;
+        gameState.inventory.space.max = gameState.storage.totalCapacity;
+        
+        // Update displays
+        updatePlayerStats();
+        updateInventoryDisplay();
+        updateUnlockedCities(); // Check if player can unlock new cities
+        
+        // Add event
+        addPlayerActionEvent(`Purchased ${propertyName} for $${formatMoney(property.cost)}. Your storage capacity is now ${gameState.storage.totalCapacity}.`);
+    }
+}
+
+// Add autosave functionality on day end
+function enhancedEndDayWithAutosave() {
+    // Call the enhanced end day function
+    enhancedEndDay();
+    
+    // Autosave every 3 days
+    if (gameState.day % 3 === 0) {
+        saveGame();
+        addPlayerActionEvent("Game autosaved.");
+    }
+}
+
+// Enhanced end day function with all new features
+function enhancedEndDay() {
+    // Apply interest to debt
+    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
+    gameState.debt += interestAmount;
+    
+    // Apply interest to bank accounts (new system)
+    applyBankInterest();
+    
+    // Apply heat decay for police system
+    decreaseHeatLevel();
+    
+    // Increment the day
+    gameState.day++;
+    
+    // Check if game is over
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+        return;
+    }
+    
+    // Generate random events with enhanced system
+    enhancedRandomEvents();
+    
+    // Check for police encounter
+    enhancedPoliceEncounter();
+    
+    // Generate new market prices
+    enhancedMarketPrices();
+    
+    // Update displays
+    updatePlayerStats();
+    updateMarketDisplay();
+    updateHeatDisplay();
+    updateUnlockedCities(); // Check if player can unlock new cities
+    
+    // Add events to log
+    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
+    
+    if (interestAmount > 0) {
+        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+    }
+    
+    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
+}
+
+// Generate random events with enhanced system
+function enhancedRandomEvents() {
+    // Get the city's effect on events
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const volatilityModifier = cityInfo ? cityInfo.marketVolatility || 1.0 : 1.0;
+    const gangWarModifier = cityInfo && cityInfo.gangWarChance ? cityInfo.gangWarChance : 1.0;
+    
+    // Police bust chance - higher in high-police activity cities
+    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
+    if (Math.random() < ENHANCED_EVENTS.POLICE_BUST_CHANCE * policeModifier) {
+        policeBust();
+    }
+    
+    // Price spike chance - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CHANGE_CHANCE * volatilityModifier) {
+        priceSpike();
+    }
+    
+    // Product scarcity chance - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRODUCT_SCARCITY_CHANCE * volatilityModifier) {
+        productScarcity();
+    }
+    
+    // Price crash chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CRASH_CHANCE * volatilityModifier) {
+        priceCrash();
+    }
+    
+    // Market flood chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.MARKET_FLOOD_CHANCE * volatilityModifier) {
+        marketFlood();
+    }
+    
+    // High demand chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.HIGH_DEMAND_CHANCE * volatilityModifier) {
+        highDemand();
+    }
+    
+    // Gang war chance (new) - affected by city's gang activity
+    if (Math.random() < ENHANCED_EVENTS.GANG_WAR_CHANCE * gangWarModifier) {
+        enhancedGangWar();
+    }
+}
+
 // Enhanced police encounter that considers city-specific police activity
 function enhancedPoliceEncounter() {
     // Skip if player had an encounter recently (last 3 days)
@@ -841,6 +2226,43 @@ function enhancedPoliceEncounter() {
         // Police encounter happens!
         triggerPoliceEncounter();
     }
+}
+
+// Determine district police activity level
+function getDistrictPoliceLevel(district) {
+    // Define high security districts
+    const highSecurity = ["Manhattan", "Beverly Hills", "Ginza", "Soho", "Downtown", "Akihabara"];
+    
+    // Define low security districts
+    const lowSecurity = ["Bronx", "Compton", "Rocinha", "Favela", "Slum", "Makoko", "Dharavi"];
+    
+    if (highSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.high;
+    } else if (lowSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.low;
+    }
+    
+    return POLICE_SYSTEM.districtActivity.medium;
+}
+
+// Trigger a police encounter
+function triggerPoliceEncounter() {
+    // Determine the type of encounter based on heat level
+    let encounterType;
+    
+    if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.BUST.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.BUST;
+    } else if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.RAID.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.RAID;
+    } else {
+        encounterType = POLICE_SYSTEM.encounters.SEARCH;
+    }
+    
+    // Record the encounter
+    gameState.police.lastEncounter = gameState.day;
+    
+    // Show encounter modal
+    enhancedPoliceModal(encounterType);
 }
 
 // Enhanced police encounter handling with city-specific features
@@ -942,6 +2364,225 @@ function enhancedPoliceModal(encounterType) {
     DOM.modalClose.style.display = 'none';
 }
 
+// Handle police encounter option selection
+function handlePoliceOption(option, encounterType, bribeAmount, successChance = null) {
+    // Restore the close button
+    DOM.modalClose.style.display = 'block';
+    
+    let result, message;
+    
+    // Get city's corruption modifier for bribes
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const corruptionModifier = cityInfo && cityInfo.policeCorruption ? cityInfo.policeCorruption : 1.0;
+    
+    switch(option) {
+        case 'submit':
+            // Use the encounter's built-in success chance
+            result = Math.random() < encounterType.successChance;
+            
+            if (result) {
+                message = "The police search you but don't find anything suspicious. You're free to go.";
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 10);
+            } else {
+                applyPoliceConsequences(encounterType);
+                message = `The police search you and find incriminating evidence. ${getConsequencesDescription(encounterType)}`;
+            }
+            break;
+            
+        case 'run':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "You manage to slip away from the police! However, they're now more suspicious of you.";
+                gameState.police.heatLevel += 15; // Running increases heat even if successful
+            } else {
+                // Failed run has worse consequences
+                applyPoliceConsequences(encounterType, 1.5);
+                message = `You try to run but are caught! The police are now much more suspicious. ${getConsequencesDescription(encounterType, 1.5)}`;
+                gameState.police.heatLevel += 30;
+            }
+            break;
+            
+        case 'fight':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "Against all odds, you manage to fight your way out! You should lay low for a while.";
+                gameState.police.heatLevel += 50; // Fighting dramatically increases heat
+            } else {
+                // Failed fight has severe consequences
+                applyPoliceConsequences(encounterType, 2);
+                message = `You try to fight but are overwhelmed! ${getConsequencesDescription(encounterType, 2)}`;
+                gameState.police.heatLevel = 100; // Maximum heat
+                
+                // Additional jail time for fighting
+                if (!encounterType.consequences.jailTime) {
+                    serveJailTime(2);
+                } else {
+                    serveJailTime(encounterType.consequences.jailTime + 2);
+                }
+            }
+            break;
+            
+        case 'bribe':
+            // Bribes are more effective in corrupt cities
+            const adjustedSuccessChance = Math.min(100, successChance * corruptionModifier);
+            result = Math.random() < (adjustedSuccessChance / 100);
+            
+            // Pay the bribe regardless of outcome
+            gameState.cash -= bribeAmount;
+            gameState.police.bribesGiven++;
+            
+            if (result) {
+                message = `The officer pockets your cash and tells his colleagues to leave you alone.${corruptionModifier > 1.2 ? ' In this city, officials are known to be quite cooperative.' : ''}`;
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - (30 * corruptionModifier));
+            } else {
+                message = "The officer takes your money but decides to search you anyway!";
+                applyPoliceConsequences(encounterType, 0.5); // Reduced consequences for attempted bribe
+                message += ` ${getConsequencesDescription(encounterType, 0.5)}`;
+            }
+            break;
+    }
+    
+    // Show result message
+    DOM.modalContent.innerHTML = `
+        <div class="police-result">
+            <p>${message}</p>
+            <button id="continue-btn">Continue</button>
+        </div>
+    `;
+    
+    // Add event listener to continue button
+    document.getElementById('continue-btn').addEventListener('click', () => {
+        closeModal();
+        updatePlayerStats();
+        updateInventoryDisplay();
+        updateHeatDisplay();
+        updateUnlockedCities(); // Check if player can unlock new cities
+    });
+}
+
+// Apply consequences from police encounter
+function applyPoliceConsequences(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    
+    // Lose inventory if applicable
+    if (consequences.inventory) {
+        const inventoryLossRatio = consequences.inventory * multiplier;
+        for (const product in gameState.inventory.items) {
+            const lostAmount = Math.ceil(gameState.inventory.items[product] * inventoryLossRatio);
+            gameState.inventory.items[product] -= lostAmount;
+            
+            // Update inventory space
+            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
+            const weightPerUnit = productInfo ? productInfo.weight : 1;
+            gameState.inventory.space.used -= lostAmount * weightPerUnit;
+            
+            // Remove product if quantity is zero or negative
+            if (gameState.inventory.items[product] <= 0) {
+                delete gameState.inventory.items[product];
+            }
+        }
+    }
+    
+    // Lose cash if applicable
+    if (consequences.cash) {
+        const cashLoss = gameState.cash * consequences.cash * multiplier;
+        gameState.cash -= Math.round(cashLoss);
+        if (gameState.cash < 0) gameState.cash = 0;
+    }
+    
+    // Handle jail time if applicable
+    if (consequences.jailTime) {
+        serveJailTime(consequences.jailTime * multiplier);
+    }
+    
+    // Update displays
+    updatePlayerStats();
+    updateInventoryDisplay();
+}
+
+// Serve jail time
+function serveJailTime(days) {
+    if (days <= 0) return;
+    
+    const jailDays = Math.round(days);
+    
+    // Advance game time
+    gameState.day += jailDays;
+    
+    // Apply interest to debt for each day
+    const totalInterest = gameState.debt * Math.pow(1 + GAME.INITIAL.INTEREST_RATE, jailDays) - gameState.debt;
+    gameState.debt += Math.round(totalInterest);
+    
+    // Add event
+    addPlayerActionEvent(`You served ${jailDays} days in jail. Your debt accrued $${formatMoney(Math.round(totalInterest))} in interest.`);
+    
+    // Check if game is over after jail time
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+    }
+}
+
+// Get description of consequences
+function getConsequencesDescription(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    let description = "";
+    
+    if (consequences.inventory) {
+        const percent = Math.round(consequences.inventory * multiplier * 100);
+        description += `They confiscate ${percent}% of your inventory. `;
+    }
+    
+    if (consequences.cash) {
+        const percent = Math.round(consequences.cash * multiplier * 100);
+        description += `You lose ${percent}% of your cash as fines. `;
+    }
+    
+    if (consequences.jailTime) {
+        const days = Math.round(consequences.jailTime * multiplier);
+        description += `You're sentenced to ${days} days in jail.`;
+    }
+    
+    return description;
+}
+
+// Decrease heat level over time - influenced by city
+function decreaseHeatLevel() {
+    if (!gameState.police) return;
+    
+    // Calculate city's police modifier for heat decay
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const policeModifier = cityInfo ? (cityInfo.policeActivity || 1.0) : 1.0;
+    
+    // Cities with high police activity have slower heat decay
+    const baseDecay = 5; // 5 points per day
+    const decay = baseDecay / policeModifier;
+    
+    // Heat naturally decreases
+    gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - decay);
+}
+
+// Increase heat level based on transaction size
+function increaseHeatLevel(transactionValue) {
+    if (!gameState.police) return;
+    
+    // Calculate city's police activity modifier
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
+    
+    // Larger transactions draw more attention, modified by city's police presence
+    const heatIncrease = Math.log10(transactionValue) * 2 * policeModifier;
+    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
+    
+    // If heat is high, give warnings to player
+    if (gameState.police.heatLevel > 70) {
+        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
+    } else if (gameState.police.heatLevel > 40) {
+        addPlayerActionEvent("Note: Your activities are attracting some police attention.");
+    }
+}
+
 // Enhanced gang war that considers city-specific gang activity
 function enhancedGangWar() {
     // Get city-specific gang war modifier
@@ -992,770 +2633,62 @@ function enhancedGangWar() {
     updateMarketDisplay();
 }
 
-// Initialize the game state
-let gameState = {
-    cash: GAME.INITIAL.CASH,
-    debt: GAME.INITIAL.DEBT,
-    day: 1,
-    dayLimit: 30, // Will be set based on user choice
-    rank: GAME.RANKS[0],
-    currentCity: "New York",
-    currentDistrict: "Bronx",
-    inventory: {
-        space: {
-            used: 0,
-            max: GAME.INITIAL.INVENTORY_SPACE
-        },
-        items: {}  // Will be filled with { productName: quantity }
-    },
-    market: {},    // Will be filled with current prices
-    events: {
-        drugNews: [],
-        playerActions: []
-    },
-    bankAccount: 0,
-    netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
-};
-
-// DOM references
-let DOM = {};
-
-// Initialize the game
-document.addEventListener('DOMContentLoaded', function() {
-    // Gather all the DOM references we'll need
-    cacheDOM();
-    
-    // Set up event listeners
-    setupEventListeners();
-    
-    // Show intro screen first
-    DOM.introScreen.style.display = 'flex';
-    DOM.gameContainer.style.display = 'none';
-});
-
-// Cache DOM elements for later use
-function cacheDOM() {
-    DOM = {
-        // Main containers
-        gameContainer: document.getElementById('game-container'),
-        introScreen: document.getElementById('intro-screen'),
-        
-        // Player stats
-        cashValue: document.getElementById('cash-value'),
-        debtValue: document.getElementById('debt-value'),
-        dayValue: document.getElementById('day-value'),
-        dayLimit: document.getElementById('day-limit'),
-        rankValue: document.getElementById('rank-value'),
-        
-        // Location elements
-        currentCity: document.getElementById('current-city'),
-        currentDistrict: document.getElementById('current-district'),
-        travelBtn: document.getElementById('travel-btn'),
-        
-        // Inventory
-        spaceUsed: document.getElementById('space-used'),
-        maxSpace: document.getElementById('max-space'),
-        inventoryList: document.getElementById('inventory-list'),
-        
-        // Market
-        marketList: document.getElementById('market-list'),
-        
-        // Events logs
-        drugNewsLog: document.getElementById('drug-news-log'),
-        playerActionsLog: document.getElementById('player-actions-log'),
-        eventsTabs: document.querySelectorAll('.tab-button'),
-        eventsTabsContent: document.querySelectorAll('.events-tab'),
-        
-        // Action buttons
-        loanSharkBtn: document.getElementById('loan-shark-btn'),
-        bankBtn: document.getElementById('bank-btn'),
-        endDayBtn: document.getElementById('end-day-btn'),
-        
-        // Cities list
-        citiesList: document.getElementById('cities-list'),
-        
-        // Modal elements
-        modalContainer: document.getElementById('modal-container'),
-        modalTitle: document.getElementById('modal-title'),
-        modalContent: document.getElementById('modal-content'),
-        modalClose: document.getElementById('modal-close'),
-        
-        // Game setup
-        gameDays: document.getElementById('game-days'),
-        startGameBtn: document.getElementById('start-game-btn')
-    };
-}
-
-// Set up all event listeners
-function setupEventListeners() {
-    // Start game button
-    DOM.startGameBtn.addEventListener('click', startGame);
-    
-    // Travel button
-    DOM.travelBtn.addEventListener('click', showEnhancedTravelOptions);
-    
-    // End day button
-    DOM.endDayBtn.addEventListener('click', enhancedEndDay);
-    
-    // Loan shark button
-    DOM.loanSharkBtn.addEventListener('click', showLoanSharkModal);
-    
-    // Bank button
-    DOM.bankBtn.addEventListener('click', showEnhancedBankModal);
-    
-    // Modal close button
-    DOM.modalClose.addEventListener('click', closeModal);
-    
-    // Event tabs
-    DOM.eventsTabs.forEach(tab => {
-        tab.addEventListener('click', () => {
-            // Remove active class from all tabs and contents
-            DOM.eventsTabs.forEach(t => t.classList.remove('active'));
-            DOM.eventsTabsContent.forEach(c => c.classList.remove('active'));
-            
-            // Add active class to clicked tab and corresponding content
-            tab.classList.add('active');
-            document.getElementById(tab.dataset.tab).classList.add('active');
-        });
-    });
-}
-
-// Start the game with the selected options
-function startGame() {
-    // Get the selected number of days
-    const selectedDays = DOM.gameDays.value;
-    gameState.dayLimit = selectedDays === 'infinite' ? Infinity : parseInt(selectedDays);
-    
-    // Update the UI
-    DOM.dayLimit.textContent = selectedDays === 'infinite' ? '∞' : selectedDays;
-    
-    // Initialize the game data
-    initializeGame();
-    
-    // Hide intro screen and show game
-    DOM.introScreen.style.display = 'none';
-    DOM.gameContainer.style.display = 'block';
-}
-
-// Initialize the game data and display
-function initializeGame() {
-    // Reset the game state to initial values
-    gameState = {
-        cash: GAME.INITIAL.CASH,
-        debt: GAME.INITIAL.DEBT,
-        day: 1,
-        dayLimit: gameState.dayLimit,
-        rank: GAME.RANKS[0],
-        currentCity: "New York",
-        currentDistrict: "Bronx",
-        inventory: {
-            space: {
-                used: 0,
-                max: GAME.INITIAL.INVENTORY_SPACE
-            },
-            items: {}
-        },
-        market: {},
-        events: {
-            drugNews: [],
-            playerActions: []
-        },
-        bankAccount: 0,
-        netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
-    };
-    
-    // Enhance gameState with new properties
-    enhanceGameState();
-    
-    // Initialize city system (apply progression data to world map)
-    initCitySystem();
-    
-    // Generate initial market prices using enhanced system
-    enhancedMarketPrices();
-    
-    // Update all displays
-    updatePlayerStats();
-    updateLocationDisplay();
-    updateInventoryDisplay();
-    updateMarketDisplay();
-    updateUnlockedCities();
-    
-    // Update UI with new elements
-    updateUI();
-    
-    // Set up enhanced event listeners
-    setupEnhancedEventListeners();
-    
-    // Update heat display
-    updateHeatDisplay();
-    
-    // Add initial event
-    addPlayerActionEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
-    addDrugNewsEvent("The local market is active. Check prices and start dealing!");
-}
-
-// Function to initialize the city system
-function initCitySystem() {
-    // Apply progression data to world map
-    updateWorldMapWithProgression();
-    
-    // Update displays
-    updateUnlockedCities();
-}
-
-// Enhance gameState with new properties
-function enhanceGameState() {
-    // Add storage properties
-    gameState.storage = {
-        ownedProperties: {},
-        totalCapacity: GAME.INITIAL.INVENTORY_SPACE
-    };
-    
-    // Add police properties
-    gameState.police = {
-        heatLevel: 0,
-        lastEncounter: 0,
-        bribesGiven: 0
-    };
-    
-    // Add enhanced banking
-    gameState.banking = {
-        accounts: {
-            "Standard Account": {
-                balance: 0,
-                unlocked: true
-            }
-        },
-        totalSavings: 0
-    };
-}
-
-// Update UI with new elements
-function updateUI() {
-    // Add Storage button to actions panel
-    const actionsPanel = document.getElementById('actions-panel');
-    const storageBtn = document.createElement('button');
-    storageBtn.id = 'storage-btn';
-    storageBtn.textContent = 'Storage Options';
-    actionsPanel.appendChild(storageBtn);
-    
-    // Add Heat Level indicator to player stats
-    const playerStats = document.getElementById('player-stats');
-    const heatDiv = document.createElement('div');
-    heatDiv.id = 'heat';
-    heatDiv.innerHTML = 'Heat: <span id="heat-value">0</span>';
-    playerStats.appendChild(heatDiv);
-    
-    // Update DOM cache
-    DOM.storageBtn = storageBtn;
-    DOM.heatValue = document.getElementById('heat-value');
-}
-
-// Update heat display
-function updateHeatDisplay() {
-    if (!DOM.heatValue) return;
-    
-    DOM.heatValue.textContent = Math.round(gameState.police.heatLevel);
-    
-    // Add visual indicator for heat level
-    if (gameState.police.heatLevel > 70) {
-        DOM.heatValue.className = 'high-heat';
-    } else if (gameState.police.heatLevel > 40) {
-        DOM.heatValue.className = 'medium-heat';
-    } else {
-        DOM.heatValue.className = '';
-    }
-}
-
-// Set up enhanced event listeners
-function setupEnhancedEventListeners() {
-    // Storage button
-    if (DOM.storageBtn) {
-        DOM.storageBtn.addEventListener('click', showStorageOptionsModal);
-    }
-}
-
-// Update player stats display
-function updatePlayerStats() {
-    DOM.cashValue.textContent = formatMoney(gameState.cash);
-    DOM.debtValue.textContent = formatMoney(gameState.debt);
-    DOM.dayValue.textContent = gameState.day;
-    DOM.rankValue.textContent = gameState.rank.name;
-    
-    // Update player rank based on net worth
-    updatePlayerRank();
-}
-
-// Update player rank based on net worth
-function updatePlayerRank() {
-    // Calculate net worth (cash + inventory value + bank account - debt)
-    const inventoryValue = calculateInventoryValue();
-    
-    let bankTotal = gameState.bankAccount;
-    
-    // If using enhanced banking, calculate total from all accounts
-    if (gameState.banking && gameState.banking.totalSavings !== undefined) {
-        bankTotal = gameState.banking.totalSavings;
-    }
-    
-    gameState.netWorth = gameState.cash + inventoryValue + bankTotal - gameState.debt;
-    
-    // Find the highest rank the player qualifies for
-    let newRank = GAME.RANKS[0];
-    for (let i = GAME.RANKS.length - 1; i >= 0; i--) {
-        if (gameState.netWorth >= GAME.RANKS[i].minWealth) {
-            newRank = GAME.RANKS[i];
-            break;
-        }
-    }
-    
-    // If rank changed, update and notify
-    if (newRank.name !== gameState.rank.name) {
-        const isPromotion = GAME.RANKS.indexOf(newRank) > GAME.RANKS.indexOf(gameState.rank);
-        gameState.rank = newRank;
-        
-        if (isPromotion) {
-            addPlayerActionEvent(`Congratulations! You've been promoted to ${newRank.name}!`);
-            
-            // If reached International Kingpin or higher, unlock all cities
-            if (newRank.minWealth >= 10000000) {
-                unlockAllCities();
-                addPlayerActionEvent("You've reached international status! All cities are now unlocked.");
-            }
-        } else {
-            addPlayerActionEvent(`Your rank has decreased to ${newRank.name}.`);
-        }
-        
-        // Update the display
-        DOM.rankValue.textContent = gameState.rank.name;
-    }
-}
-
-// Calculate the total value of inventory at current market prices
-function calculateInventoryValue() {
-    let totalValue = 0;
-    
-    for (const product in gameState.inventory.items) {
-        const quantity = gameState.inventory.items[product];
-        const currentPrice = gameState.market[product] || 0;
-        totalValue += quantity * currentPrice;
-    }
-    
-    return totalValue;
-}
-
-// Update location display
-function updateLocationDisplay() {
-    DOM.currentCity.textContent = gameState.currentCity;
-    DOM.currentDistrict.textContent = gameState.currentDistrict;
-}
-
-// Update inventory display
-function updateInventoryDisplay() {
-    // Update space usage
-    DOM.spaceUsed.textContent = gameState.inventory.space.used;
-    DOM.maxSpace.textContent = gameState.inventory.space.max;
-    
-    // Clear the inventory list
-    DOM.inventoryList.innerHTML = '';
-    
-    // Add each item to the inventory list
-    for (const product in gameState.inventory.items) {
-        const quantity = gameState.inventory.items[product];
-        if (quantity > 0) {
-            const listItem = document.createElement('li');
-            
-            // Find the product weight
-            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
-            const weight = productInfo ? productInfo.weight : 1;
-            
-            listItem.innerHTML = `
-                <span>${product}</span>
-                <span>${quantity} (${quantity * weight} space)</span>
-            `;
-            DOM.inventoryList.appendChild(listItem);
-        }
-    }
-    
-    // If inventory is empty, show a message
-    if (DOM.inventoryList.children.length === 0) {
-        const emptyItem = document.createElement('li');
-        emptyItem.textContent = "Your inventory is empty";
-        DOM.inventoryList.appendChild(emptyItem);
-    }
-}
-
-// Update market display
-function updateMarketDisplay() {
-    // Clear the market list
-    DOM.marketList.innerHTML = '';
-    
-    // Add each product to the market list
-    GAME.PRODUCTS.forEach(product => {
-        const row = document.createElement('tr');
-        const price = gameState.market[product.name];
-        const inventoryQuantity = gameState.inventory.items[product.name] || 0;
-        
-        // If the product is available in this market
-        if (price !== undefined) {
-            row.innerHTML = `
-                <td>${product.name}</td>
-                <td>$${formatMoney(price)}</td>
-                <td>${inventoryQuantity}</td>
-                <td>
-                    <button class="buy-btn" data-product="${product.name}">Buy</button>
-                    <button class="sell-btn" data-product="${product.name}" ${inventoryQuantity === 0 ? 'disabled' : ''}>Sell</button>
-                </td>
-            `;
-        } else {
-            row.innerHTML = `
-                <td>${product.name}</td>
-                <td>Not available</td>
-                <td>${inventoryQuantity}</td>
-                <td>
-                    <button class="buy-btn" disabled>Buy</button>
-                    <button class="sell-btn" data-product="${product.name}" ${inventoryQuantity === 0 ? 'disabled' : ''}>Sell</button>
-                </td>
-            `;
-        }
-        
-        DOM.marketList.appendChild(row);
-    });
-    
-    // Add event listeners to buy/sell buttons
-    document.querySelectorAll('.buy-btn').forEach(button => {
-        if (!button.disabled) {
-            button.addEventListener('click', () => {
-                showBuyModal(button.dataset.product);
-            });
-        }
-    });
-    
-    document.querySelectorAll('.sell-btn').forEach(button => {
-        if (!button.disabled) {
-            button.addEventListener('click', () => {
-                showSellModal(button.dataset.product);
-            });
-        }
-    });
-}
-
-// Update unlocked cities display with sorted cities
-function updateUnlockedCities() {
-    // Clear the cities list
-    DOM.citiesList.innerHTML = '';
-    
-    // Sort cities by unlock cost
-    const sortedCities = getSortedCities();
-    
-    // Add each city to the list
-    for (const cityData of sortedCities) {
-        const city = cityData.name;
-        const cityInfo = WORLD_MAP[city];
-        const listItem = document.createElement('li');
-        
-        if (cityInfo.unlocked) {
-            listItem.textContent = `${city} ✓`;
-        } else {
-            listItem.textContent = `${city} 🔒 $${formatMoney(cityInfo.unlockCost)}`;
-            listItem.classList.add('locked');
-            
-            // If player can unlock this city, add a special class
-            if (canUnlockCity(city)) {
-                listItem.classList.add('can-unlock');
-            }
-        }
-        
-        DOM.citiesList.appendChild(listItem);
-    }
-}
-
-// Show buy modal for a product
-function showBuyModal(productName) {
-    const price = gameState.market[productName];
-    const maxAffordable = Math.floor(gameState.cash / price);
-    const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
-    const weightPerUnit = productInfo ? productInfo.weight : 1;
-    const spaceLeft = gameState.inventory.space.max - gameState.inventory.space.used;
-    const maxFitInInventory = Math.floor(spaceLeft / weightPerUnit);
-    const maxPurchase = Math.min(maxAffordable, maxFitInInventory);
-    
-    DOM.modalTitle.textContent = `Buy ${productName}`;
-    
-    let content = `
-        <div class="buy-modal">
-            <p>Current price: $${formatMoney(price)}</p>
-            <p>You can afford: ${maxAffordable}</p>
-            <p>Inventory space available: ${spaceLeft} (can fit ${maxFitInInventory})</p>
-            <p>Weight per unit: ${weightPerUnit}</p>
-            
-            <div class="quantity-selector">
-                <label for="buy-quantity">Quantity to buy:</label>
-                <input type="number" id="buy-quantity" min="1" max="${maxPurchase}" value="1">
-            </div>
-            
-            <div class="total-cost">
-                Total cost: $<span id="total-buy-cost">${formatMoney(price)}</span>
-            </div>
-            
-            <button id="confirm-buy" ${maxPurchase <= 0 ? 'disabled' : ''}>
-                Confirm Purchase
-            </button>
-        </div>
-    `;
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners
-    const quantityInput = document.getElementById('buy-quantity');
-    const totalCostSpan = document.getElementById('total-buy-cost');
-    const confirmButton = document.getElementById('confirm-buy');
-    
-    quantityInput.addEventListener('input', () => {
-        const quantity = parseInt(quantityInput.value) || 0;
-        totalCostSpan.textContent = formatMoney(quantity * price);
-    });
-    
-    confirmButton.addEventListener('click', () => {
-        const quantity = parseInt(quantityInput.value) || 0;
-        if (quantity > 0 && quantity <= maxPurchase) {
-            buyProduct(productName, quantity);
-            closeModal();
-        }
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
-}
-
-// Execute a product purchase with heat increase
-function buyProduct(productName, quantity) {
-    const price = gameState.market[productName];
-    const totalCost = price * quantity;
-    
-    if (gameState.cash >= totalCost) {
-        // Update cash
-        gameState.cash -= totalCost;
-        
-        // Update inventory
-        if (!gameState.inventory.items[productName]) {
-            gameState.inventory.items[productName] = 0;
-        }
-        gameState.inventory.items[productName] += quantity;
-        
-        // Update inventory space
-        const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
-        const weightPerUnit = productInfo ? productInfo.weight : 1;
-        gameState.inventory.space.used += quantity * weightPerUnit;
-        
-        // Increase heat level based on transaction size
-        increaseHeatLevel(totalCost);
-        updateHeatDisplay();
-        
-        // Update displays
-        updatePlayerStats();
-        updateInventoryDisplay();
-        updateMarketDisplay();
-        
-        // Add event
-        addPlayerActionEvent(`Bought ${quantity} ${productName} for $${formatMoney(totalCost)}.`);
-    }
-}
-
-// Increase heat level based on transaction size
-function increaseHeatLevel(transactionValue) {
-    // Calculate city's police activity modifier
-    const cityInfo = WORLD_MAP[gameState.currentCity];
-    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
-    
-    // Larger transactions draw more attention, modified by city's police presence
-    const heatIncrease = Math.log10(transactionValue) * 2 * policeModifier;
-    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
-    
-    // If heat is high, give warnings to player
-    if (gameState.police.heatLevel > 70) {
-        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
-    } else if (gameState.police.heatLevel > 40) {
-        addPlayerActionEvent("Note: Your activities are attracting some police attention.");
-    }
-}
-
-// Decrease heat level over time - influenced by city
-function decreaseHeatLevel() {
-    // Calculate city's police modifier for heat decay
-    const cityInfo = WORLD_MAP[gameState.currentCity];
-    const policeModifier = cityInfo ? (cityInfo.policeActivity || 1.0) : 1.0;
-    
-    // Cities with high police activity have slower heat decay
-    const baseDecay = 5; // 5 points per day
-    const decay = baseDecay / policeModifier;
-    
-    // Heat naturally decreases
-    gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - decay);
-}
-
-// Show sell modal for a product
-function showSellModal(productName) {
-    const price = gameState.market[productName];
-    const quantityOwned = gameState.inventory.items[productName] || 0;
-    
-    DOM.modalTitle.textContent = `Sell ${productName}`;
-    
-    let content = `
-        <div class="sell-modal">
-            <p>Current price: $${formatMoney(price || 0)}</p>
-            <p>You own: ${quantityOwned}</p>
-            
-            <div class="quantity-selector">
-                <label for="sell-quantity">Quantity to sell:</label>
-                <input type="number" id="sell-quantity" min="1" max="${quantityOwned}" value="1">
-            </div>
-            
-            <div class="total-value">
-                Total value: $<span id="total-sell-value">${formatMoney(price || 0)}</span>
-            </div>
-            
-            <button id="confirm-sell" ${quantityOwned <= 0 || !price ? 'disabled' : ''}>
-                Confirm Sale
-            </button>
-        </div>
-    `;
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners
-    const quantityInput = document.getElementById('sell-quantity');
-    const totalValueSpan = document.getElementById('total-sell-value');
-    const confirmButton = document.getElementById('confirm-sell');
-    
-    quantityInput.addEventListener('input', () => {
-        const quantity = parseInt(quantityInput.value) || 0;
-        totalValueSpan.textContent = formatMoney(quantity * (price || 0));
-    });
-    
-    confirmButton.addEventListener('click', () => {
-        const quantity = parseInt(quantityInput.value) || 0;
-        if (quantity > 0 && quantity <= quantityOwned) {
-            sellProduct(productName, quantity);
-            closeModal();
-        }
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
-}
-
-// Execute a product sale with heat increase
-function sellProduct(productName, quantity) {
-    const price = gameState.market[productName];
-    const totalValue = price * quantity;
-    
-    // Update cash
-    gameState.cash += totalValue;
-    
-    // Update inventory
-    gameState.inventory.items[productName] -= quantity;
-    if (gameState.inventory.items[productName] <= 0) {
-        delete gameState.inventory.items[productName];
-    }
-    
-    // Update inventory space
-    const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
-    const weightPerUnit = productInfo ? productInfo.weight : 1;
-    gameState.inventory.space.used -= quantity * weightPerUnit;
-    
-    // Increase heat level based on transaction size
-    increaseHeatLevel(totalValue);
-    updateHeatDisplay();
-    
-    // Update displays
-    updatePlayerStats();
-    updateInventoryDisplay();
-    updateMarketDisplay();
-    updateUnlockedCities(); // Check if player can unlock new cities
+// Price crash event - the opposite of a price spike
+function priceCrash() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    
+    // Crash the price to 30-60% of minimum price
+    const crashMultiplier = 0.3 + Math.random() * 0.3;
+    const newPrice = Math.round(productInfo.minPrice * crashMultiplier);
+    
+    // Set the new price
+    gameState.market[randomProduct] = newPrice;
     
     // Add event
-    addPlayerActionEvent(`Sold ${quantity} ${productName} for $${formatMoney(totalValue)}.`);
+    addDrugNewsEvent(`📉 Price crash! ${randomProduct} prices have plummeted to $${formatMoney(newPrice)} due to market flooding.`);
 }
 
-// Show loan shark modal
-function showLoanSharkModal() {
-    DOM.modalTitle.textContent = "Loan Shark";
+// Market flood event - makes a product very cheap and abundant
+function marketFlood() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
     
-    let content = `
-        <div class="loan-shark-modal">
-            <p>Current debt: $${formatMoney(gameState.debt)}</p>
-            <p>Interest rate: ${GAME.INITIAL.INTEREST_RATE * 100}% per day</p>
-            
-            <div class="loan-options">
-                <div class="borrow-section">
-                    <h3>Borrow Money</h3>
-                    <div class="input-group">
-                        <label for="borrow-amount">Amount to borrow:</label>
-                        <input type="number" id="borrow-amount" min="100" step="100" value="1000">
-                    </div>
-                    <button id="confirm-borrow">Borrow</button>
-                </div>
-                
-                <div class="repay-section">
-                    <h3>Repay Debt</h3>
-                    <div class="input-group">
-                        <label for="repay-amount">Amount to repay:</label>
-                        <input type="number" id="repay-amount" min="100" max="${gameState.cash}" step="100" value="${Math.min(1000, gameState.cash)}">
-                    </div>
-                    <button id="confirm-repay" ${gameState.cash <= 0 ? 'disabled' : ''}>Repay</button>
-                </div>
-            </div>
-        </div>
-    `;
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
     
-    DOM.modalContent.innerHTML = content;
+    // Lower the price significantly (20-40% of minimum)
+    const floodPrice = Math.round(productInfo.minPrice * (0.2 + Math.random() * 0.2));
     
-    // Add event listeners
-    document.getElementById('confirm-borrow').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('borrow-amount').value) || 0;
-        if (amount >= 100) {
-            borrowMoney(amount);
-            closeModal();
-        }
-    });
+    // Set the new price
+    gameState.market[randomProduct] = floodPrice;
     
-    document.getElementById('confirm-repay').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('repay-amount').value) || 0;
-        if (amount > 0 && amount <= gameState.cash) {
-            repayDebt(amount);
-            closeModal();
-        }
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
+    // Add event
+    addDrugNewsEvent(`🌊 Market flood! A massive shipment of ${randomProduct} has flooded ${gameState.currentCity}, dropping prices to $${formatMoney(floodPrice)}.`);
 }
 
-// Borrow money from the loan shark
-function borrowMoney(amount) {
-    gameState.cash += amount;
-    gameState.debt += amount;
+// High demand event - raises prices of all products in an area
+function highDemand() {
+    const demandMultiplier = 1.5 + Math.random();  // 1.5-2.5x price increase
+    let affectedProducts = [];
     
-    updatePlayerStats();
-    updateUnlockedCities(); // Check if player can unlock new cities
-    addPlayerActionEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
-}
-
-// Repay debt to the loan shark
-function repayDebt(amount) {
-    const actualRepayment = Math.min(amount, gameState.debt);
-    
-    gameState.cash -= actualRepayment;
-    gameState.debt -= actualRepayment;
-    
-    updatePlayerStats();
-    
-    addPlayerActionEvent(`Repaid $${formatMoney(actualRepayment)} to the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
-    
-    if (gameState.debt === 0) {
-        addPlayerActionEvent("You've paid off your debt completely!");
+    // Apply price increase to all available products
+    for (const product in gameState.market) {
+        const newPrice = Math.round(gameState.market[product] * demandMultiplier);
+        gameState.market[product] = newPrice;
+        affectedProducts.push(product);
     }
+    
+    // Add event
+    addDrugNewsEvent(`🔥 High demand in ${gameState.currentDistrict}! Prices have increased for all available products due to high local demand.`);
+    
+    // Update market display
+    updateMarketDisplay();
 }
 
 // Show enhanced bank modal
@@ -2135,524 +3068,101 @@ function applyBankInterest() {
     updateTotalSavings();
 }
 
-// Function to show available storage options
-function showStorageOptionsModal() {
-    DOM.modalTitle.textContent = "Purchase Storage";
+// Execute a product purchase with heat increase
+function buyProduct(productName, quantity) {
+    const price = gameState.market[productName];
+    const totalCost = price * quantity;
     
-    let content = `
-        <div class="storage-modal">
-            <h3>Your Current Storage Capacity: ${gameState.storage.totalCapacity}</h3>
-            <p>Purchase properties to increase your storage capacity:</p>
-            
-            <div class="storage-options-list">
-    `;
-    
-    // List all available storage options
-    for (const [propertyName, property] of Object.entries(STORAGE_OPTIONS)) {
-        const alreadyOwned = gameState.storage.ownedProperties[propertyName];
-        const canAfford = gameState.cash >= property.cost;
-        const meetsRankRequirement = GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank;
-        const disabled = alreadyOwned || !canAfford || !meetsRankRequirement;
+    if (gameState.cash >= totalCost) {
+        // Update cash
+        gameState.cash -= totalCost;
         
-        content += `
-            <div class="storage-option ${disabled ? 'disabled' : ''}">
-                <h4>${propertyName} ${alreadyOwned ? '(Owned)' : ''}</h4>
-                <p>${property.description}</p>
-                <p>Storage Capacity: ${property.capacity}</p>
-                <p>Cost: $${formatMoney(property.cost)}</p>
-                ${!meetsRankRequirement ? 
-                    `<p class="requirement-note">Required Rank: ${GAME.RANKS[property.requiredRank].name}</p>` : ''}
-                <button 
-                    class="purchase-storage-btn" 
-                    data-property="${propertyName}" 
-                    ${disabled ? 'disabled' : ''}
-                >
-                    ${alreadyOwned ? 'Owned' : 'Purchase'}
-                </button>
-            </div>
-        `;
-    }
-    
-    content += `
-            </div>
-        </div>
-    `;
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners to purchase buttons
-    document.querySelectorAll('.purchase-storage-btn:not([disabled])').forEach(button => {
-        button.addEventListener('click', () => {
-            purchaseStorage(button.dataset.property);
-            closeModal();
-        });
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
-}
-
-// Function to purchase storage
-function purchaseStorage(propertyName) {
-    const property = STORAGE_OPTIONS[propertyName];
-    
-    if (gameState.cash >= property.cost && 
-        !gameState.storage.ownedProperties[propertyName] &&
-        GAME.RANKS.indexOf(gameState.rank) >= property.requiredRank) {
+        // Update inventory
+        if (!gameState.inventory.items[productName]) {
+            gameState.inventory.items[productName] = 0;
+        }
+        gameState.inventory.items[productName] += quantity;
         
-        // Deduct cash
-        gameState.cash -= property.cost;
+        // Update inventory space
+        const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
+        const weightPerUnit = productInfo ? productInfo.weight : 1;
+        gameState.inventory.space.used += quantity * weightPerUnit;
         
-        // Add to owned properties
-        gameState.storage.ownedProperties[propertyName] = true;
-        
-        // Increase total capacity
-        gameState.storage.totalCapacity += property.capacity;
-        gameState.inventory.space.max = gameState.storage.totalCapacity;
+        // Increase heat level based on transaction size
+        increaseHeatLevel(totalCost);
+        updateHeatDisplay();
         
         // Update displays
         updatePlayerStats();
         updateInventoryDisplay();
-        updateUnlockedCities(); // Check if player can unlock new cities
+        updateMarketDisplay();
         
         // Add event
-        addPlayerActionEvent(`Purchased ${propertyName} for $${formatMoney(property.cost)}. Your storage capacity is now ${gameState.storage.totalCapacity}.`);
+        addPlayerActionEvent(`Bought ${quantity} ${productName} for $${formatMoney(totalCost)}.`);
     }
 }
 
-// Enhanced end day function with all new features
-function enhancedEndDay() {
-    // Apply interest to debt
-    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
-    gameState.debt += interestAmount;
+// Execute a product sale with heat increase
+function sellProduct(productName, quantity) {
+    const price = gameState.market[productName];
+    const totalValue = price * quantity;
     
-    // Apply interest to bank accounts (new system)
-    applyBankInterest();
-    
-    // Apply heat decay for police system
-    decreaseHeatLevel();
-    
-    // Increment the day
-    gameState.day++;
-    
-    // Check if game is over
-    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-        endGame();
-        return;
-    }
-    
-    // Generate random events with enhanced system
-    enhancedRandomEvents();
-    
-    // Check for police encounter
-    enhancedPoliceEncounter();
-    
-    // Generate new market prices
-    enhancedMarketPrices();
-    
-    // Update displays
-    updatePlayerStats();
-    updateMarketDisplay();
-    updateHeatDisplay();
-    updateUnlockedCities(); // Check if player can unlock new cities
-    
-    // Add events to log
-    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
-    
-    if (interestAmount > 0) {
-        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
-    }
-    
-    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
-}
-
-// Generate random events with enhanced system
-function enhancedRandomEvents() {
-    // Get the city's effect on events
-    const cityInfo = WORLD_MAP[gameState.currentCity];
-    const volatilityModifier = cityInfo ? cityInfo.marketVolatility || 1.0 : 1.0;
-    const gangWarModifier = cityInfo && cityInfo.gangWarChance ? cityInfo.gangWarChance : 1.0;
-    
-    // Police bust chance - higher in high-police activity cities
-    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
-    if (Math.random() < ENHANCED_EVENTS.POLICE_BUST_CHANCE * policeModifier) {
-        policeBust();
-    }
-    
-    // Price spike chance - affected by market volatility
-    if (Math.random() < ENHANCED_EVENTS.PRICE_CHANGE_CHANCE * volatilityModifier) {
-        priceSpike();
-    }
-    
-    // Product scarcity chance - affected by market volatility
-    if (Math.random() < ENHANCED_EVENTS.PRODUCT_SCARCITY_CHANCE * volatilityModifier) {
-        productScarcity();
-    }
-    
-    // Price crash chance (new) - affected by market volatility
-    if (Math.random() < ENHANCED_EVENTS.PRICE_CRASH_CHANCE * volatilityModifier) {
-        priceCrash();
-    }
-    
-    // Market flood chance (new) - affected by market volatility
-    if (Math.random() < ENHANCED_EVENTS.MARKET_FLOOD_CHANCE * volatilityModifier) {
-        marketFlood();
-    }
-    
-    // High demand chance (new) - affected by market volatility
-    if (Math.random() < ENHANCED_EVENTS.HIGH_DEMAND_CHANCE * volatilityModifier) {
-        highDemand();
-    }
-    
-    // Gang war chance (new) - affected by city's gang activity
-    if (Math.random() < ENHANCED_EVENTS.GANG_WAR_CHANCE * gangWarModifier) {
-        enhancedGangWar();
-    }
-}
-
-// Price crash event - the opposite of a price spike
-function priceCrash() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
-    
-    // Get the base price range
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
-    
-    // Crash the price to 30-60% of minimum price
-    const crashMultiplier = 0.3 + Math.random() * 0.3;
-    const newPrice = Math.round(productInfo.minPrice * crashMultiplier);
-    
-    // Set the new price
-    gameState.market[randomProduct] = newPrice;
-    
-    // Add event
-    addDrugNewsEvent(`📉 Price crash! ${randomProduct} prices have plummeted to $${formatMoney(newPrice)} due to market flooding.`);
-}
-
-// Market flood event - makes a product very cheap and abundant
-function marketFlood() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
-    
-    // Get the base price range
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
-    
-    // Lower the price significantly (20-40% of minimum)
-    const floodPrice = Math.round(productInfo.minPrice * (0.2 + Math.random() * 0.2));
-    
-    // Set the new price
-    gameState.market[randomProduct] = floodPrice;
-    
-    // Add event
-    addDrugNewsEvent(`🌊 Market flood! A massive shipment of ${randomProduct} has flooded ${gameState.currentCity}, dropping prices to $${formatMoney(floodPrice)}.`);
-}
-
-// High demand event - raises prices of all products in an area
-function highDemand() {
-    const demandMultiplier = 1.5 + Math.random();  // 1.5-2.5x price increase
-    let affectedProducts = [];
-    
-    // Apply price increase to all available products
-    for (const product in gameState.market) {
-        const newPrice = Math.round(gameState.market[product] * demandMultiplier);
-        gameState.market[product] = newPrice;
-        affectedProducts.push(product);
-    }
-    
-    // Add event
-    addDrugNewsEvent(`🔥 High demand in ${gameState.currentDistrict}! Prices have increased for all available products due to high local demand.`);
-    
-    // Update market display
-    updateMarketDisplay();
-}
-
-// Determine district police activity level
-function getDistrictPoliceLevel(district) {
-    // Define high security districts
-    const highSecurity = ["Manhattan", "Beverly Hills", "Ginza", "Soho", "Downtown", "Akihabara"];
-    
-    // Define low security districts
-    const lowSecurity = ["Bronx", "Compton", "Rocinha", "Favela", "Slum", "Makoko", "Dharavi"];
-    
-    if (highSecurity.some(area => district.includes(area))) {
-        return POLICE_SYSTEM.districtActivity.high;
-    } else if (lowSecurity.some(area => district.includes(area))) {
-        return POLICE_SYSTEM.districtActivity.low;
-    }
-    
-    return POLICE_SYSTEM.districtActivity.medium;
-}
-
-// Trigger a police encounter
-function triggerPoliceEncounter() {
-    // Determine the type of encounter based on heat level
-    let encounterType;
-    
-    if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.BUST.heatThreshold) {
-        encounterType = POLICE_SYSTEM.encounters.BUST;
-    } else if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.RAID.heatThreshold) {
-        encounterType = POLICE_SYSTEM.encounters.RAID;
-    } else {
-        encounterType = POLICE_SYSTEM.encounters.SEARCH;
-    }
-    
-    // Record the encounter
-    gameState.police.lastEncounter = gameState.day;
-    
-    // Show encounter modal
-    enhancedPoliceModal(encounterType);
-}
-
-// Handle police encounter option selection
-function handlePoliceOption(option, encounterType, bribeAmount, successChance = null) {
-    // Restore the close button
-    DOM.modalClose.style.display = 'block';
-    
-    let result, message;
-    
-    // Get city's corruption modifier for bribes
-    const cityInfo = WORLD_MAP[gameState.currentCity];
-    const corruptionModifier = cityInfo && cityInfo.policeCorruption ? cityInfo.policeCorruption : 1.0;
-    
-    switch(option) {
-        case 'submit':
-            // Use the encounter's built-in success chance
-            result = Math.random() < encounterType.successChance;
-            
-            if (result) {
-                message = "The police search you but don't find anything suspicious. You're free to go.";
-                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 10);
-            } else {
-                applyPoliceConsequences(encounterType);
-                message = `The police search you and find incriminating evidence. ${getConsequencesDescription(encounterType)}`;
-            }
-            break;
-            
-        case 'run':
-            result = Math.random() < (successChance / 100);
-            
-            if (result) {
-                message = "You manage to slip away from the police! However, they're now more suspicious of you.";
-                gameState.police.heatLevel += 15; // Running increases heat even if successful
-            } else {
-                // Failed run has worse consequences
-                applyPoliceConsequences(encounterType, 1.5);
-                message = `You try to run but are caught! The police are now much more suspicious. ${getConsequencesDescription(encounterType, 1.5)}`;
-                gameState.police.heatLevel += 30;
-            }
-            break;
-            
-        case 'fight':
-            result = Math.random() < (successChance / 100);
-            
-            if (result) {
-                message = "Against all odds, you manage to fight your way out! You should lay low for a while.";
-                gameState.police.heatLevel += 50; // Fighting dramatically increases heat
-            } else {
-                // Failed fight has severe consequences
-                applyPoliceConsequences(encounterType, 2);
-                message = `You try to fight but are overwhelmed! ${getConsequencesDescription(encounterType, 2)}`;
-                gameState.police.heatLevel = 100; // Maximum heat
-                
-                // Additional jail time for fighting
-                if (!encounterType.consequences.jailTime) {
-                    serveJailTime(2);
-                } else {
-                    serveJailTime(encounterType.consequences.jailTime + 2);
-                }
-            }
-            break;
-            
-        case 'bribe':
-            // Bribes are more effective in corrupt cities
-            const adjustedSuccessChance = Math.min(100, successChance * corruptionModifier);
-            result = Math.random() < (adjustedSuccessChance / 100);
-            
-            // Pay the bribe regardless of outcome
-            gameState.cash -= bribeAmount;
-            gameState.police.bribesGiven++;
-            
-            if (result) {
-                message = `The officer pockets your cash and tells his colleagues to leave you alone.${corruptionModifier > 1.2 ? ' In this city, officials are known to be quite cooperative.' : ''}`;
-                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - (30 * corruptionModifier));
-            } else {
-                message = "The officer takes your money but decides to search you anyway!";
-                applyPoliceConsequences(encounterType, 0.5); // Reduced consequences for attempted bribe
-                message += ` ${getConsequencesDescription(encounterType, 0.5)}`;
-            }
-            break;
-    }
-    
-    // Show result message
-    DOM.modalContent.innerHTML = `
-        <div class="police-result">
-            <p>${message}</p>
-            <button id="continue-btn">Continue</button>
-        </div>
-    `;
-    
-    // Add event listener to continue button
-    document.getElementById('continue-btn').addEventListener('click', () => {
-        closeModal();
-        updatePlayerStats();
-        updateInventoryDisplay();
-        updateHeatDisplay();
-        updateUnlockedCities(); // Check if player can unlock new cities
-    });
-}
-
-// Apply consequences from police encounter
-function applyPoliceConsequences(encounterType, multiplier = 1) {
-    const consequences = encounterType.consequences;
-    
-    // Lose inventory if applicable
-    if (consequences.inventory) {
-        const inventoryLossRatio = consequences.inventory * multiplier;
-        for (const product in gameState.inventory.items) {
-            const lostAmount = Math.ceil(gameState.inventory.items[product] * inventoryLossRatio);
-            gameState.inventory.items[product] -= lostAmount;
-            
-            // Update inventory space
-            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
-            const weightPerUnit = productInfo ? productInfo.weight : 1;
-            gameState.inventory.space.used -= lostAmount * weightPerUnit;
-            
-            // Remove product if quantity is zero or negative
-            if (gameState.inventory.items[product] <= 0) {
-                delete gameState.inventory.items[product];
-            }
-        }
-    }
-    
-    // Lose cash if applicable
-    if (consequences.cash) {
-        const cashLoss = gameState.cash * consequences.cash * multiplier;
-        gameState.cash -= Math.round(cashLoss);
-        if (gameState.cash < 0) gameState.cash = 0;
-    }
-    
-    // Handle jail time if applicable
-    if (consequences.jailTime) {
-        serveJailTime(consequences.jailTime * multiplier);
-    }
-    
-    // Update displays
-    updatePlayerStats();
-    updateInventoryDisplay();
-}
-
-// Serve jail time
-function serveJailTime(days) {
-    if (days <= 0) return;
-    
-    const jailDays = Math.round(days);
-    
-    // Advance game time
-    gameState.day += jailDays;
-    
-    // Apply interest to debt for each day
-    const totalInterest = gameState.debt * Math.pow(1 + GAME.INITIAL.INTEREST_RATE, jailDays) - gameState.debt;
-    gameState.debt += Math.round(totalInterest);
-    
-    // Add event
-    addPlayerActionEvent(`You served ${jailDays} days in jail. Your debt accrued $${formatMoney(Math.round(totalInterest))} in interest.`);
-    
-    // Check if game is over after jail time
-    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-        endGame();
-    }
-}
-
-// Get description of consequences
-function getConsequencesDescription(encounterType, multiplier = 1) {
-    const consequences = encounterType.consequences;
-    let description = "";
-    
-    if (consequences.inventory) {
-        const percent = Math.round(consequences.inventory * multiplier * 100);
-        description += `They confiscate ${percent}% of your inventory. `;
-    }
-    
-    if (consequences.cash) {
-        const percent = Math.round(consequences.cash * multiplier * 100);
-        description += `You lose ${percent}% of your cash as fines. `;
-    }
-    
-    if (consequences.jailTime) {
-        const days = Math.round(consequences.jailTime * multiplier);
-        description += `You're sentenced to ${days} days in jail.`;
-    }
-    
-    return description;
-}
-
-// Police bust event
-function policeBust() {
-    // Get random product from inventory
-    const productsOwned = Object.keys(gameState.inventory.items);
-    if (productsOwned.length === 0) return;
-    
-    const randomProduct = productsOwned[Math.floor(Math.random() * productsOwned.length)];
-    const quantity = gameState.inventory.items[randomProduct];
-    const lostQuantity = Math.ceil(quantity * (0.3 + Math.random() * 0.4)); // Lose 30-70% of stock
+    // Update cash
+    gameState.cash += totalValue;
     
     // Update inventory
-    gameState.inventory.items[randomProduct] -= lostQuantity;
-    if (gameState.inventory.items[randomProduct] <= 0) {
-        delete gameState.inventory.items[randomProduct];
+    gameState.inventory.items[productName] -= quantity;
+    if (gameState.inventory.items[productName] <= 0) {
+        delete gameState.inventory.items[productName];
     }
     
     // Update inventory space
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    const productInfo = GAME.PRODUCTS.find(p => p.name === productName);
     const weightPerUnit = productInfo ? productInfo.weight : 1;
-    gameState.inventory.space.used -= lostQuantity * weightPerUnit;
+    gameState.inventory.space.used -= quantity * weightPerUnit;
     
-    // Update displays
-    updateInventoryDisplay();
-    
-    // Increase heat level
-    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + 15);
+    // Increase heat level based on transaction size
+    increaseHeatLevel(totalValue);
     updateHeatDisplay();
     
+    // Update displays
+    updatePlayerStats();
+    updateInventoryDisplay();
+    updateMarketDisplay();
+    updateUnlockedCities(); // Check if player can unlock new cities
+    
     // Add event
-    addDrugNewsEvent(`🚨 Police bust! Authorities raided ${gameState.currentDistrict}.`);
-    addPlayerActionEvent(`You lost ${lostQuantity} ${randomProduct} in the police raid.`);
+    addPlayerActionEvent(`Sold ${quantity} ${productName} for $${formatMoney(totalValue)}.`);
 }
 
-// Price spike event
-function priceSpike() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+// Update unlocked cities display with sorted cities
+function updateUnlockedCities() {
+    // Clear the cities list
+    DOM.citiesList.innerHTML = '';
     
-    // Get the base price range
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
-    const priceRange = productInfo.maxPrice - productInfo.minPrice;
+    // Sort cities by unlock cost
+    const sortedCities = getSortedCities();
     
-    // Spike the price by 2-5x
-    const spikeMultiplier = 2 + Math.floor(Math.random() * 4);
-    const newPrice = productInfo.maxPrice + Math.floor(priceRange * (spikeMultiplier - 1) * Math.random());
-    
-    // Set the new price
-    gameState.market[randomProduct] = newPrice;
-    
-    // Add event
-    addDrugNewsEvent(`💰 Price spike! ${randomProduct} prices have soared to $${formatMoney(newPrice)} due to a supply shortage.`);
-}
-
-// Product scarcity event
-function productScarcity() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
-    
-    // Remove it from the market
-    delete gameState.market[randomProduct];
-    
-    // Add event
-    addDrugNewsEvent(`⚠️ Product shortage! ${randomProduct} is unavailable in ${gameState.currentDistrict} today due to a major bust.`);
+    // Add each city to the list
+    for (const cityData of sortedCities) {
+        const city = cityData.name;
+        const cityInfo = WORLD_MAP[city];
+        const listItem = document.createElement('li');
+        
+        if (cityInfo.unlocked) {
+            listItem.textContent = `${city} ✓`;
+        } else {
+            listItem.textContent = `${city} 🔒 $${formatMoney(cityInfo.unlockCost)}`;
+            listItem.classList.add('locked');
+            
+            // If player can unlock this city, add a special class
+            if (canUnlockCity(city)) {
+                listItem.classList.add('can-unlock');
+            }
+        }
+        
+        DOM.citiesList.appendChild(listItem);
+    }
 }
 
 // Unlock all cities in the world map
@@ -2666,6 +3176,9 @@ function unlockAllCities() {
 
 // End the game and show final score
 function endGame() {
+    // Delete any existing saved game when the game ends
+    deleteSavedGame();
+    
     // Calculate final score
     const inventoryValue = calculateInventoryValue();
     
@@ -2772,6 +3285,76 @@ function formatMoney(amount) {
 function addCityStyles() {
     const styleElement = document.createElement('style');
     styleElement.innerHTML = `
+        /* Save/Load Buttons Styling */
+        .action-btn, #continue-game-btn {
+            background: linear-gradient(to right, var(--blue-glow), var(--secondary));
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px 15px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: all 0.3s;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 8px rgba(0, 195, 255, 0.4);
+            font-weight: bold;
+            letter-spacing: 0.5px;
+        }
+
+        .action-btn:hover, #continue-game-btn:hover {
+            background: linear-gradient(to right, var(--secondary), var(--blue-glow));
+            box-shadow: 0 0 12px rgba(0, 195, 255, 0.6);
+            transform: translateY(-2px);
+        }
+
+        #new-game-btn {
+            background: linear-gradient(to right, var(--warning), var(--danger));
+            box-shadow: 0 0 8px rgba(255, 90, 90, 0.4);
+        }
+
+        #new-game-btn:hover {
+            background: linear-gradient(to right, var(--danger), var(--warning));
+            box-shadow: 0 0 12px rgba(255, 90, 90, 0.6);
+        }
+
+        #continue-game-btn {
+            padding: 15px 30px;
+            font-size: 18px;
+            margin-bottom: 15px;
+            background: linear-gradient(to right, var(--success), var(--secondary));
+        }
+
+        .modal-buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #confirm-load, #confirm-new-game {
+            background: linear-gradient(to right, var(--success), #00ff99);
+            color: white;
+            border: none;
+            box-shadow: 0 0 8px rgba(57, 255, 20, 0.4);
+        }
+
+        #cancel-load, #cancel-new-game {
+            background: linear-gradient(to right, var(--danger), #ff8c8c);
+            color: white;
+            border: none;
+            box-shadow: 0 0 8px rgba(255, 90, 90, 0.4);
+        }
+
+        #confirm-new-game {
+            background: linear-gradient(to right, var(--warning), var(--danger));
+        }
+        
         /* City progression styling */
         .cities-list {
             max-height: 350px;
@@ -2833,12 +3416,34 @@ function addCityStyles() {
             padding-top: 10px;
             border-top: 1px dotted rgba(255, 255, 255, 0.2);
         }
+
+        /* Right panel styling for hiding unlocked cities */
+        #right-panel {
+            display: flex;
+            flex-direction: column;
+        }
+
+        #actions-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+        }
+
+        #actions-panel button {
+            margin-top: 8px; /* Adjust spacing between buttons */
+        }
+
+        #unlocked-cities-panel {
+            display: none; /* This hides the unlocked cities panel */
+        }
+
+        /* If you want the buttons to fill the width of the panel */
+        #actions-panel button {
+            width: 100%;
+        }
     `;
+    
     document.head.appendChild(styleElement);
 }
-
-// Call this after DOM content loaded
-document.addEventListener('DOMContentLoaded', function() {
-    // Add the city styles to the page
-    addCityStyles();
-});
