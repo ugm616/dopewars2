@@ -52,6 +52,250 @@ const ENHANCED_EVENTS = {
     GANG_WAR_CHANCE: 0.05            // New event
 };
 
+// Define city distances from New York and unlock thresholds
+const CITY_PROGRESSION = {
+    "New York": {
+        unlockCost: 0,  // Starting city
+        distance: 0,
+        specialFeature: "Balanced market with moderate police presence",
+        policeActivity: 1.0, // Standard police activity
+        marketVolatility: 1.0, // Standard market volatility
+        productModifiers: {} // No specific product modifiers
+    },
+    "Boston": {
+        unlockCost: 100000,  // $100k
+        distance: 215, // miles from NYC
+        specialFeature: "Lower police presence but higher prices",
+        policeActivity: 0.7,
+        marketVolatility: 1.1,
+        productModifiers: {
+            "Acid": 1.2, // More expensive
+            "Weed": 1.15
+        }
+    },
+    "Philadelphia": {
+        unlockCost: 150000,  // $150k
+        distance: 95, // miles from NYC
+        specialFeature: "Cheap pharmaceuticals but higher police activity",
+        policeActivity: 1.2,
+        marketVolatility: 0.9,
+        productModifiers: {
+            "PCP": 0.8, // Cheaper
+            "Speed": 0.8
+        }
+    },
+    "Washington DC": {
+        unlockCost: 250000,  // $250k
+        distance: 225, // miles from NYC
+        specialFeature: "Corrupt officials can be bribed more easily",
+        policeActivity: 1.3,
+        marketVolatility: 0.9,
+        bribeEffectiveness: 1.4, // Bribes 40% more effective
+        productModifiers: {
+            "Cocaine": 1.2 // More expensive
+        }
+    },
+    "Chicago": {
+        unlockCost: 350000,  // $350k
+        distance: 790, // miles from NYC
+        specialFeature: "Gang territories affect market stability",
+        policeActivity: 1.1,
+        marketVolatility: 1.3, // More volatile market
+        gangWarChance: 1.5, // Higher chance of gang wars
+        productModifiers: {
+            "Heroin": 0.9
+        }
+    },
+    "Miami": {
+        unlockCost: 500000,  // $500k
+        distance: 1280, // miles from NYC
+        specialFeature: "Major drug import hub with volatile prices",
+        policeActivity: 1.2,
+        marketVolatility: 1.5, // Very volatile market
+        productModifiers: {
+            "Cocaine": 0.7, // Much cheaper cocaine
+            "Speed": 1.2
+        }
+    },
+    "Los Angeles": {
+        unlockCost: 750000,  // $750k
+        distance: 2790, // miles from NYC
+        specialFeature: "Cheap weed but high-priced synthetics",
+        policeActivity: 1.2,
+        marketVolatility: 1.2,
+        productModifiers: {
+            "Weed": 0.7, // Cheaper weed
+            "Acid": 1.3,
+            "Ecstasy": 1.2
+        }
+    },
+    "Vancouver": {
+        unlockCost: 1000000,  // $1M
+        distance: 2430, // miles from NYC
+        specialFeature: "Safe haven with low police presence but high prices",
+        policeActivity: 0.6, // Very low police activity
+        marketVolatility: 0.8,
+        productModifiers: {
+            "Weed": 0.8,
+            "Shrooms": 0.8,
+            "Heroin": 1.3,
+            "Cocaine": 1.3
+        }
+    },
+    "Mexico City": {
+        unlockCost: 1500000,  // $1.5M
+        distance: 2090, // miles from NYC
+        specialFeature: "Cartel territory with cheap products but dangerous conditions",
+        policeActivity: 1.4, // High police/cartel activity
+        policeCorruption: 1.3, // Easier bribes
+        marketVolatility: 1.4,
+        gangWarChance: 2.0, // Highest chance of gang wars
+        productModifiers: {
+            "Heroin": 0.6, // Much cheaper
+            "Cocaine": 0.65,
+            "Weed": 0.7
+        }
+    },
+    "Amsterdam": {
+        unlockCost: 2000000,  // $2M
+        distance: 3640, // miles from NYC
+        specialFeature: "Legal drugs create unique market dynamics",
+        policeActivity: 0.5, // Very low police activity
+        marketVolatility: 0.7, // Stable market
+        productModifiers: {
+            "Weed": 0.5, // Much cheaper
+            "Shrooms": 0.5,
+            "Acid": 0.7,
+            "Ecstasy": 0.7
+        }
+    },
+    "London": {
+        unlockCost: 2500000,  // $2.5M
+        distance: 3470, // miles from NYC
+        specialFeature: "High-end market with premium prices",
+        policeActivity: 0.9,
+        marketVolatility: 0.8,
+        productModifiers: {
+            "Cocaine": 1.3, // More expensive
+            "Ecstasy": 1.1,
+            "Heroin": 1.2
+        }
+    },
+    "Paris": {
+        unlockCost: 3000000,  // $3M
+        distance: 3630, // miles from NYC
+        specialFeature: "Luxury drug market with higher prices",
+        policeActivity: 0.8,
+        marketVolatility: 0.7,
+        productModifiers: {
+            "Cocaine": 1.4, // Much more expensive
+            "Acid": 1.2,
+            "Ecstasy": 1.1
+        }
+    },
+    "Berlin": {
+        unlockCost: 3500000,  // $3.5M
+        distance: 3960, // miles from NYC
+        specialFeature: "Techno scene creates high demand for party drugs",
+        policeActivity: 0.7,
+        marketVolatility: 0.9,
+        productModifiers: {
+            "Ecstasy": 0.7, // Cheaper
+            "Speed": 0.7,
+            "Acid": 0.8
+        }
+    },
+    "Moscow": {
+        unlockCost: 4000000,  // $4M
+        distance: 4660, // miles from NYC
+        specialFeature: "Black market operations with high risk/reward",
+        policeActivity: 1.5, // Very high police activity
+        policeCorruption: 1.5, // Much easier bribes
+        marketVolatility: 1.2,
+        productModifiers: {
+            "Heroin": 0.7,
+            "Speed": 0.6
+        }
+    },
+    "Dubai": {
+        unlockCost: 4500000,  // $4.5M
+        distance: 6840, // miles from NYC
+        specialFeature: "Extremely strict laws but premium prices",
+        policeActivity: 1.8, // Highest police activity
+        marketVolatility: 1.0,
+        productModifiers: {
+            "Cocaine": 1.7, // Extremely expensive
+            "Ecstasy": 1.6,
+            "Weed": 1.5,
+            "Heroin": 1.5
+        }
+    },
+    "Bangkok": {
+        unlockCost: 5000000,  // $5M
+        distance: 8650, // miles from NYC
+        specialFeature: "Tourist market with varied demand",
+        policeActivity: 1.1,
+        policeCorruption: 1.4, // Easier bribes
+        marketVolatility: 1.3,
+        productModifiers: {
+            "Heroin": 0.6, // Much cheaper
+            "Weed": 0.5,
+            "Speed": 0.7,
+            "Shrooms": 0.6
+        }
+    },
+    "Hong Kong": {
+        unlockCost: 6000000,  // $6M
+        distance: 8030, // miles from NYC
+        specialFeature: "High security but lucrative market",
+        policeActivity: 1.4,
+        marketVolatility: 1.1,
+        productModifiers: {
+            "Cocaine": 1.5, // More expensive
+            "Heroin": 0.8,
+            "Speed": 1.2
+        }
+    },
+    "Tokyo": {
+        unlockCost: 7000000,  // $7M
+        distance: 6760, // miles from NYC
+        specialFeature: "Extremely high prices but low police activity",
+        policeActivity: 0.6,
+        marketVolatility: 0.8,
+        productModifiers: {
+            "Speed": 2.0, // Extremely expensive
+            "Cocaine": 2.5,
+            "Acid": 1.8,
+            "Ecstasy": 1.9
+        }
+    },
+    "Sydney": {
+        unlockCost: 8000000,  // $8M
+        distance: 9930, // miles from NYC
+        specialFeature: "Isolated market with unique price dynamics",
+        policeActivity: 0.9,
+        marketVolatility: 1.0,
+        productModifiers: {
+            "Cocaine": 1.8, // Very expensive
+            "Ecstasy": 1.3,
+            "Weed": 0.9
+        }
+    },
+    "Rio de Janeiro": {
+        unlockCost: 9000000,  // $9M
+        distance: 4800, // miles from NYC
+        specialFeature: "Favela connections give access to cheap product",
+        policeActivity: 1.3,
+        policeCorruption: 1.5, // Much easier bribes
+        gangWarChance: 1.8, // High gang war chance
+        marketVolatility: 1.5,
+        productModifiers: {
+            "Cocaine": 0.5, // Very cheap
+            "Weed": 0.6
+        }
+    }
+};
+
 // Storage options configuration
 const STORAGE_OPTIONS = {
     "Small Safehouse": {
@@ -181,13 +425,41 @@ const WORLD_MAP = {
         unlocked: true,
         districts: ["Bronx", "Brooklyn", "Manhattan", "Queens", "Staten Island", "Harlem"]
     },
+    "Boston": {
+        unlocked: false,
+        districts: ["Downtown", "Back Bay", "North End", "South Boston", "Roxbury", "Beacon Hill"]
+    },
+    "Philadelphia": {
+        unlocked: false,
+        districts: ["Center City", "Fishtown", "Old City", "South Philly", "West Philly", "Kensington"]
+    },
+    "Washington DC": {
+        unlocked: false,
+        districts: ["Georgetown", "Adams Morgan", "Capitol Hill", "Dupont Circle", "Shaw", "Anacostia"]
+    },
+    "Chicago": {
+        unlocked: false,
+        districts: ["The Loop", "Wicker Park", "Lincoln Park", "South Side", "West Side", "Gold Coast"]
+    },
+    "Miami": {
+        unlocked: false,
+        districts: ["South Beach", "Downtown", "Little Havana", "Wynwood", "Coconut Grove", "Liberty City"]
+    },
     "Los Angeles": {
         unlocked: false,
         districts: ["Downtown", "Hollywood", "Venice Beach", "Beverly Hills", "Compton", "East LA"]
     },
-    "Tokyo": {
+    "Vancouver": {
         unlocked: false,
-        districts: ["Shibuya", "Shinjuku", "Roppongi", "Akihabara", "Ginza", "Ueno"]
+        districts: ["Downtown Eastside", "Chinatown", "Strathcona", "Hastings-Sunrise", "Mount Pleasant", "Grandview-Woodland"]
+    },
+    "Mexico City": {
+        unlocked: false,
+        districts: ["Tepito", "Iztapalapa", "Doctores", "Guerrero", "Peralvillo", "Morelos"]
+    },
+    "Amsterdam": {
+        unlocked: false,
+        districts: ["Red Light District", "Bijlmer", "Nieuw-West", "Zuidoost", "Noord", "Oost"]
     },
     "London": {
         unlocked: false,
@@ -197,9 +469,29 @@ const WORLD_MAP = {
         unlocked: false,
         districts: ["Montmartre", "Pigalle", "Belleville", "La Chapelle", "Barbès", "Saint-Denis"]
     },
+    "Berlin": {
+        unlocked: false,
+        districts: ["Kreuzberg", "Neukölln", "Wedding", "Friedrichshain", "Moabit", "Gesundbrunnen"]
+    },
     "Moscow": {
         unlocked: false,
         districts: ["Arbat", "Presnensky", "Tverskoy", "Taganka", "Zamoskvorechye", "Basmanny"]
+    },
+    "Dubai": {
+        unlocked: false,
+        districts: ["Deira", "Al Qusais", "Naif", "Al Murar", "Al Baraha", "Hor Al Anz"]
+    },
+    "Bangkok": {
+        unlocked: false,
+        districts: ["Patpong", "Klong Toey", "Khao San", "Nana", "Huai Khwang", "Din Daeng"]
+    },
+    "Hong Kong": {
+        unlocked: false,
+        districts: ["Mong Kok", "Sham Shui Po", "Yau Ma Tei", "Wan Chai", "North Point", "Kwun Tong"]
+    },
+    "Tokyo": {
+        unlocked: false,
+        districts: ["Shibuya", "Shinjuku", "Roppongi", "Akihabara", "Ginza", "Ueno"]
     },
     "Sydney": {
         unlocked: false,
@@ -208,56 +500,497 @@ const WORLD_MAP = {
     "Rio de Janeiro": {
         unlocked: false,
         districts: ["Copacabana", "Ipanema", "Rocinha", "Maré", "Cidade de Deus", "Complexo do Alemão"]
-    },
-    "Mexico City": {
-        unlocked: false,
-        districts: ["Tepito", "Iztapalapa", "Doctores", "Guerrero", "Peralvillo", "Morelos"]
-    },
-    "Bangkok": {
-        unlocked: false,
-        districts: ["Patpong", "Klong Toey", "Khao San", "Nana", "Huai Khwang", "Din Daeng"]
-    },
-    "Amsterdam": {
-        unlocked: false,
-        districts: ["Red Light District", "Bijlmer", "Nieuw-West", "Zuidoost", "Noord", "Oost"]
-    },
-    "Berlin": {
-        unlocked: false,
-        districts: ["Kreuzberg", "Neukölln", "Wedding", "Friedrichshain", "Moabit", "Gesundbrunnen"]
-    },
-    "Bogotá": {
-        unlocked: false,
-        districts: ["Kennedy", "Ciudad Bolivar", "Suba", "Bosa", "Los Mártires", "Santa Fe"]
-    },
-    "Johannesburg": {
-        unlocked: false,
-        districts: ["Hillbrow", "Berea", "Yeoville", "Diepsloot", "Alexandra", "Soweto"]
-    },
-    "Mumbai": {
-        unlocked: false,
-        districts: ["Dharavi", "Kamathipura", "Dongri", "Sewri", "Wadala", "Worli"]
-    },
-    "Lagos": {
-        unlocked: false,
-        districts: ["Mushin", "Ajegunle", "Makoko", "Apapa", "Oshodi", "Shomolu"]
-    },
-    "Istanbul": {
-        unlocked: false,
-        districts: ["Tarlabaşı", "Balat", "Dolapdere", "Kasımpaşa", "Karaköy", "Çarşamba"]
-    },
-    "Hong Kong": {
-        unlocked: false,
-        districts: ["Mong Kok", "Sham Shui Po", "Yau Ma Tei", "Wan Chai", "North Point", "Kwun Tong"]
-    },
-    "Dubai": {
-        unlocked: false,
-        districts: ["Deira", "Al Qusais", "Naif", "Al Murar", "Al Baraha", "Hor Al Anz"]
-    },
-    "Vancouver": {
-        unlocked: false,
-        districts: ["Downtown Eastside", "Chinatown", "Strathcona", "Hastings-Sunrise", "Mount Pleasant", "Grandview-Woodland"]
     }
 };
+
+// Function to update WORLD_MAP with the new city progression data
+function updateWorldMapWithProgression() {
+    for (const city in WORLD_MAP) {
+        // If this city exists in our progression data
+        if (CITY_PROGRESSION[city]) {
+            // Only New York is unlocked initially
+            WORLD_MAP[city].unlocked = city === "New York";
+            WORLD_MAP[city].unlockCost = CITY_PROGRESSION[city].unlockCost;
+            WORLD_MAP[city].specialFeature = CITY_PROGRESSION[city].specialFeature;
+            WORLD_MAP[city].policeActivity = CITY_PROGRESSION[city].policeActivity || 1.0;
+            WORLD_MAP[city].marketVolatility = CITY_PROGRESSION[city].marketVolatility || 1.0;
+            WORLD_MAP[city].productModifiers = CITY_PROGRESSION[city].productModifiers || {};
+            
+            // Add optional properties if they exist
+            if (CITY_PROGRESSION[city].policeCorruption) {
+                WORLD_MAP[city].policeCorruption = CITY_PROGRESSION[city].policeCorruption;
+            }
+            
+            if (CITY_PROGRESSION[city].gangWarChance) {
+                WORLD_MAP[city].gangWarChance = CITY_PROGRESSION[city].gangWarChance;
+            }
+        }
+    }
+}
+
+// Sort cities by unlock cost to display in order
+function getSortedCities() {
+    const cities = [];
+    for (const city in WORLD_MAP) {
+        cities.push({
+            name: city,
+            unlockCost: WORLD_MAP[city].unlockCost || 0,
+            unlocked: WORLD_MAP[city].unlocked
+        });
+    }
+    
+    // Sort by unlock cost (ascending)
+    cities.sort((a, b) => a.unlockCost - b.unlockCost);
+    return cities;
+}
+
+// Function to check if a city can be unlocked
+function canUnlockCity(city) {
+    if (!WORLD_MAP[city] || WORLD_MAP[city].unlocked) return false;
+    return gameState.cash >= WORLD_MAP[city].unlockCost;
+}
+
+// Function to unlock a specific city
+function unlockCity(city) {
+    if (!canUnlockCity(city)) return false;
+    
+    // Deduct cost from cash
+    gameState.cash -= WORLD_MAP[city].unlockCost;
+    
+    // Unlock the city
+    WORLD_MAP[city].unlocked = true;
+    
+    // Update player stats
+    updatePlayerStats();
+    updateUnlockedCities();
+    
+    // Add event
+    addPlayerActionEvent(`Unlocked ${city} for $${formatMoney(WORLD_MAP[city].unlockCost)}!`);
+    addDrugNewsEvent(`New market opened: ${city} is now available with ${WORLD_MAP[city].specialFeature}.`);
+    
+    return true;
+}
+
+// Enhanced travel options modal that shows unlock costs
+function showEnhancedTravelOptions() {
+    DOM.modalTitle.textContent = "Travel";
+    let content = '<div class="travel-options">';
+    
+    // Current city's districts
+    content += `<h3>Districts in ${gameState.currentCity}</h3>`;
+    content += '<div class="districts-list">';
+    
+    WORLD_MAP[gameState.currentCity].districts.forEach(district => {
+        const isCurrentDistrict = district === gameState.currentDistrict;
+        content += `
+            <div class="district-option ${isCurrentDistrict ? 'current' : ''}" 
+                 data-district="${district}" 
+                 data-city="${gameState.currentCity}"
+                 ${isCurrentDistrict ? 'disabled' : ''}>
+                ${district} ${isCurrentDistrict ? '(current)' : ''}
+            </div>
+        `;
+    });
+    content += '</div>';
+    
+    // Other cities, sorted by unlock cost
+    content += '<h3>Other Cities</h3>';
+    content += '<div class="cities-list">';
+    
+    const sortedCities = getSortedCities();
+    
+    for (const cityData of sortedCities) {
+        const city = cityData.name;
+        if (city !== gameState.currentCity) {
+            const isLocked = !WORLD_MAP[city].unlocked;
+            const canUnlock = canUnlockCity(city);
+            const unlockCost = WORLD_MAP[city].unlockCost;
+            const specialFeature = WORLD_MAP[city].specialFeature || '';
+            
+            let cityClass = '';
+            if (isLocked) {
+                cityClass = canUnlock ? 'can-unlock' : 'locked';
+            }
+            
+            content += `
+                <div class="city-option ${cityClass}" 
+                     data-city="${city}"
+                     ${isLocked && !canUnlock ? 'disabled' : ''}>
+                    ${city} ${isLocked ? '🔒' : '✓'} 
+                    ${isLocked ? 
+                        `<div class="city-unlock-info">
+                            <span class="unlock-cost">Cost: $${formatMoney(unlockCost)}</span>
+                            ${canUnlock ? '<button class="unlock-city-btn">Unlock</button>' : ''}
+                        </div>` : 
+                        ''
+                    }
+                    <div class="city-feature">${specialFeature}</div>
+                </div>
+            `;
+        }
+    }
+    content += '</div>';
+    content += '</div>';
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners to district options
+    document.querySelectorAll('.district-option:not([disabled])').forEach(option => {
+        option.addEventListener('click', () => {
+            enhancedTravelToDistrict(option.dataset.district);
+            closeModal();
+        });
+    });
+    
+    // Add event listeners to unlocked city options
+    document.querySelectorAll('.city-option:not(.locked):not(.can-unlock)').forEach(option => {
+        option.addEventListener('click', () => {
+            enhancedTravelToCity(option.dataset.city);
+            closeModal();
+        });
+    });
+    
+    // Add event listeners to unlock buttons
+    document.querySelectorAll('.unlock-city-btn').forEach(button => {
+        const cityOption = button.closest('.city-option');
+        const city = cityOption.dataset.city;
+        
+        button.addEventListener('click', (e) => {
+            e.stopPropagation(); // Prevent bubbling to parent
+            if (unlockCity(city)) {
+                // Update the city option to make it clickable
+                cityOption.classList.remove('can-unlock');
+                const unlockInfo = cityOption.querySelector('.city-unlock-info');
+                if (unlockInfo) {
+                    unlockInfo.remove();
+                }
+                
+                // Add click event for travel
+                cityOption.addEventListener('click', () => {
+                    enhancedTravelToCity(city);
+                    closeModal();
+                });
+            }
+        });
+    });
+    
+    // Show the modal
+    DOM.modalContainer.classList.remove('hidden');
+}
+
+// Enhanced price modifiers based on location
+function enhancedPriceModifiers(basePrice, productName) {
+    let modifier = 1.0; // Default: no modification
+    
+    // Apply city-specific modifiers
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    if (cityInfo && cityInfo.productModifiers && cityInfo.productModifiers[productName]) {
+        modifier *= cityInfo.productModifiers[productName];
+    }
+    
+    // Apply district modifiers (same as before)
+    const district = gameState.currentDistrict;
+    
+    // Apply specific district modifiers
+    if (district.includes("Downtown") || 
+        district.includes("Upscale") || 
+        district.includes("Beverly") ||
+        district.includes("Ginza")) {
+        modifier *= 1.2; // Price premium in wealthy areas
+    }
+    
+    if (district.includes("Slum") || 
+        district.includes("Ghetto") || 
+        district.includes("Favela") ||
+        district.includes("Compton")) {
+        modifier *= 0.9; // Slightly cheaper in poor areas but more dangerous
+    }
+    
+    // Apply city volatility to the random fluctuation
+    const volatility = cityInfo ? (cityInfo.marketVolatility || 1.0) : 1.0;
+    const fluctuationRange = 0.05 * volatility; // ±5% base, modified by city volatility
+    
+    modifier *= (1.0 - fluctuationRange) + (Math.random() * fluctuationRange * 2);
+    
+    return Math.round(basePrice * modifier);
+}
+
+// Enhanced market generation that uses city special features
+function enhancedMarketPrices() {
+    gameState.market = {};
+    
+    // Get city volatility (affects product availability)
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const volatility = cityInfo ? (cityInfo.marketVolatility || 1.0) : 1.0;
+    
+    GAME.PRODUCTS.forEach(product => {
+        // Determine if product is available (base 1/8 chance, affected by volatility)
+        // Higher volatility means more chance of products being unavailable
+        const unavailabilityChance = 0.125 * volatility;
+        const isAvailable = Math.random() > unavailabilityChance;
+        
+        if (isAvailable) {
+            // Generate a random price within the range
+            const range = product.maxPrice - product.minPrice;
+            let price = Math.floor(Math.random() * range + product.minPrice);
+            
+            // Apply enhanced modifiers based on location
+            price = enhancedPriceModifiers(price, product.name);
+            
+            // Store in the market
+            gameState.market[product.name] = price;
+        }
+    });
+}
+
+// Enhanced travel to a different district - now advances time
+function enhancedTravelToDistrict(district) {
+    if (district !== gameState.currentDistrict) {
+        gameState.currentDistrict = district;
+        
+        // Advance the day
+        advanceDayForTravel();
+        
+        // Generate new market prices
+        enhancedMarketPrices();
+        updateLocationDisplay();
+        updateMarketDisplay();
+        
+        addPlayerActionEvent(`You've traveled to ${district}.`);
+        addDrugNewsEvent(`Market prices in ${district} have been updated.`);
+    }
+}
+
+// Enhanced travel to a different city - now advances time
+function enhancedTravelToCity(city) {
+    if (city !== gameState.currentCity && WORLD_MAP[city].unlocked) {
+        gameState.currentCity = city;
+        gameState.currentDistrict = WORLD_MAP[city].districts[0];
+        
+        // Advance the day more for traveling to a different city
+        advanceDayForTravel(true);
+        
+        // Generate new market prices
+        enhancedMarketPrices();
+        updateLocationDisplay();
+        updateMarketDisplay();
+        
+        addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
+        addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
+    }
+}
+
+// Function to advance the day when traveling
+function advanceDayForTravel(isCityTravel = false) {
+    // City travel takes more time than district travel
+    const daysToAdvance = isCityTravel ? 2 : 1;
+    
+    for (let i = 0; i < daysToAdvance; i++) {
+        // Apply interest to debt
+        const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
+        gameState.debt += interestAmount;
+        
+        // Apply interest to bank accounts
+        applyBankInterest();
+        
+        // Apply heat decay for police system
+        decreaseHeatLevel();
+        
+        // Increment the day
+        gameState.day++;
+        
+        // Check if game is over after day advancement
+        if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+            endGame();
+            return;
+        }
+        
+        // Add events to log
+        if (i === 0) { // Only add these messages once
+            addPlayerActionEvent(`Day ${gameState.day}: Travel day.`);
+            
+            if (interestAmount > 0) {
+                addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+            }
+        }
+    }
+    
+    // Update displays
+    updatePlayerStats();
+    updateHeatDisplay();
+}
+
+// Enhanced police encounter that considers city-specific police activity
+function enhancedPoliceEncounter() {
+    // Skip if player had an encounter recently (last 3 days)
+    if (gameState.day - gameState.police.lastEncounter < 3) {
+        return;
+    }
+    
+    // Get district police activity modifier
+    const districtModifier = getDistrictPoliceLevel(gameState.currentDistrict);
+    
+    // Apply city-specific police activity
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const cityPoliceModifier = cityInfo ? (cityInfo.policeActivity || 1.0) : 1.0;
+    
+    // Calculate encounter probability based on heat level, district, and city
+    const encounterProbability = (gameState.police.heatLevel / 100) * districtModifier * cityPoliceModifier * 0.5;
+    
+    if (Math.random() < encounterProbability) {
+        // Police encounter happens!
+        triggerPoliceEncounter();
+    }
+}
+
+// Enhanced police encounter handling with city-specific features
+function enhancedPoliceModal(encounterType) {
+    // Calculate bribe effectiveness based on city corruption level
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const corruptionModifier = cityInfo && cityInfo.policeCorruption ? cityInfo.policeCorruption : 1.0;
+    
+    // Calculate bribe amount based on heat level and player's cash
+    const minBribe = 1000 + (gameState.police.heatLevel * 100);
+    // Corrupt cities have lower bribe requirements
+    const adjustedMinBribe = Math.round(minBribe / corruptionModifier);
+    const recommendedBribe = Math.min(Math.round(gameState.cash * 0.15), adjustedMinBribe);
+    const canAffordBribe = gameState.cash >= adjustedMinBribe;
+    
+    // Calculate chances of success for different options
+    const runChance = Math.max(10, 50 - gameState.police.heatLevel / 2);
+    const fightChance = Math.max(5, 30 - gameState.police.heatLevel / 2);
+    const bribeEffectiveness = Math.min(90, Math.round((recommendedBribe / adjustedMinBribe) * 100 * corruptionModifier));
+    
+    // Display city-specific info in the police encounter modal
+    let citySpecificInfo = "";
+    if (corruptionModifier > 1.0) {
+        citySpecificInfo = `<p class="city-police-info">The police in ${gameState.currentCity} are known to be corrupt and more receptive to bribes.</p>`;
+    } else if (cityInfo && cityInfo.policeActivity > 1.3) {
+        citySpecificInfo = `<p class="city-police-info">Warning: ${gameState.currentCity} has extremely strict drug enforcement.</p>`;
+    } else if (cityInfo && cityInfo.policeActivity < 0.7) {
+        citySpecificInfo = `<p class="city-police-info">${gameState.currentCity} has relaxed police enforcement compared to other cities.</p>`;
+    }
+    
+    // Now build the modal content with this information
+    DOM.modalTitle.textContent = encounterType.name;
+    
+    let content = `
+        <div class="police-encounter">
+            <p class="encounter-description">${encounterType.description} They're checking everyone in ${gameState.currentDistrict}.</p>
+            <p class="heat-level">Your current heat level: <span class="heat-value">${Math.round(gameState.police.heatLevel)}/100</span></p>
+            ${citySpecificInfo}
+            
+            <div class="encounter-options">
+                <div class="option">
+                    <h4>Submit to Search</h4>
+                    <p>Cooperate with the police and hope they don't find anything.</p>
+                    <p>Success chance: ${Math.round(encounterType.successChance * 100)}%</p>
+                    <button id="submit-option">Submit</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Run</h4>
+                    <p>Try to escape the situation. Higher risk but may avoid all consequences.</p>
+                    <p>Success chance: ${runChance}%</p>
+                    <button id="run-option">Run</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Fight</h4>
+                    <p>Resist the police. Very high risk but may avoid all consequences.</p>
+                    <p>Success chance: ${fightChance}%</p>
+                    <button id="fight-option">Fight</button>
+                </div>
+                
+                <div class="option">
+                    <h4>Bribe</h4>
+                    <p>Offer a bribe to make them look the other way.</p>
+                    <p>Minimum bribe: $${formatMoney(adjustedMinBribe)}</p>
+                    <p>Effectiveness: ${bribeEffectiveness}%</p>
+                    <button id="bribe-option" ${!canAffordBribe ? 'disabled' : ''}>
+                        ${canAffordBribe ? `Bribe $${formatMoney(recommendedBribe)}` : 'Cannot afford bribe'}
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    DOM.modalContent.innerHTML = content;
+    
+    // Add event listeners
+    document.getElementById('submit-option').addEventListener('click', () => {
+        handlePoliceOption('submit', encounterType, recommendedBribe);
+    });
+    
+    document.getElementById('run-option').addEventListener('click', () => {
+        handlePoliceOption('run', encounterType, recommendedBribe, runChance);
+    });
+    
+    document.getElementById('fight-option').addEventListener('click', () => {
+        handlePoliceOption('fight', encounterType, recommendedBribe, fightChance);
+    });
+    
+    const bribeButton = document.getElementById('bribe-option');
+    if (!bribeButton.disabled) {
+        bribeButton.addEventListener('click', () => {
+            handlePoliceOption('bribe', encounterType, recommendedBribe, bribeEffectiveness);
+        });
+    }
+    
+    // Show the modal - can't be closed without selecting an option
+    DOM.modalContainer.classList.remove('hidden');
+    DOM.modalClose.style.display = 'none';
+}
+
+// Enhanced gang war that considers city-specific gang activity
+function enhancedGangWar() {
+    // Get city-specific gang war modifier
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const gangWarModifier = cityInfo && cityInfo.gangWarChance ? cityInfo.gangWarChance : 1.0;
+    
+    // Increase some prices due to territory disputes
+    let affectedProducts = [];
+    const productKeys = Object.keys(gameState.market);
+    
+    // Select 1-3 random products to affect, more in high-gang-activity cities
+    const numAffected = Math.round((1 + Math.floor(Math.random() * 3)) * gangWarModifier);
+    for (let i = 0; i < numAffected && i < productKeys.length; i++) {
+        const randomIndex = Math.floor(Math.random() * productKeys.length);
+        const product = productKeys[randomIndex];
+        
+        // Remove this product from future consideration
+        productKeys.splice(randomIndex, 1);
+        
+        // Increase price by 30-100%, more in high-gang-activity cities
+        const warMultiplier = 1.3 + (Math.random() * 0.7 * gangWarModifier);
+        gameState.market[product] = Math.round(gameState.market[product] * warMultiplier);
+        affectedProducts.push(product);
+    }
+    
+    // Add event with city-specific description
+    let gangWarMessage = `⚔️ Gang war! Violence has broken out in ${gameState.currentDistrict}!`;
+    
+    if (gangWarModifier > 1.5) {
+        gangWarMessage += ` Cartel violence is particularly intense in ${gameState.currentCity}.`;
+    } else if (gangWarModifier > 1.0) {
+        gangWarMessage += ` Gang activity is elevated in this city.`;
+    }
+    
+    addDrugNewsEvent(gangWarMessage);
+    
+    // Chance of player getting injured (losing money for medical bills)
+    // Higher in high-gang-activity cities
+    const injuryChance = 0.4 * gangWarModifier;
+    if (Math.random() < injuryChance && gameState.cash > 0) {
+        const injuryCost = Math.min(gameState.cash * 0.15 * gangWarModifier, 5000 * gangWarModifier);
+        gameState.cash -= Math.round(injuryCost);
+        addPlayerActionEvent(`You were injured in the gang war crossfire! Medical bills cost you $${formatMoney(Math.round(injuryCost))}.`);
+        updatePlayerStats();
+    }
+    
+    // Update market display
+    updateMarketDisplay();
+}
 
 // Initialize the game state
 let gameState = {
@@ -359,7 +1092,7 @@ function setupEventListeners() {
     DOM.startGameBtn.addEventListener('click', startGame);
     
     // Travel button
-    DOM.travelBtn.addEventListener('click', showTravelOptions);
+    DOM.travelBtn.addEventListener('click', showEnhancedTravelOptions);
     
     // End day button
     DOM.endDayBtn.addEventListener('click', enhancedEndDay);
@@ -368,7 +1101,7 @@ function setupEventListeners() {
     DOM.loanSharkBtn.addEventListener('click', showLoanSharkModal);
     
     // Bank button
-    DOM.bankBtn.addEventListener('click', showBankModal);
+    DOM.bankBtn.addEventListener('click', showEnhancedBankModal);
     
     // Modal close button
     DOM.modalClose.addEventListener('click', closeModal);
@@ -430,12 +1163,15 @@ function initializeGame() {
         bankAccount: 0,
         netWorth: GAME.INITIAL.CASH - GAME.INITIAL.DEBT
     };
-
-    // Add enhanced properties to gameState
+    
+    // Enhance gameState with new properties
     enhanceGameState();
     
-    // Generate initial market prices
-    generateMarketPrices();
+    // Initialize city system (apply progression data to world map)
+    initCitySystem();
+    
+    // Generate initial market prices using enhanced system
+    enhancedMarketPrices();
     
     // Update all displays
     updatePlayerStats();
@@ -444,9 +1180,9 @@ function initializeGame() {
     updateMarketDisplay();
     updateUnlockedCities();
     
-    // Update the UI with new elements
+    // Update UI with new elements
     updateUI();
-
+    
     // Set up enhanced event listeners
     setupEnhancedEventListeners();
     
@@ -456,6 +1192,15 @@ function initializeGame() {
     // Add initial event
     addPlayerActionEvent("Welcome to Dope Wars Global! You owe the Loan Shark $5,500. Start trading to make money!");
     addDrugNewsEvent("The local market is active. Check prices and start dealing!");
+}
+
+// Function to initialize the city system
+function initCitySystem() {
+    // Apply progression data to world map
+    updateWorldMapWithProgression();
+    
+    // Update displays
+    updateUnlockedCities();
 }
 
 // Enhance gameState with new properties
@@ -506,20 +1251,6 @@ function updateUI() {
     DOM.heatValue = document.getElementById('heat-value');
 }
 
-// Set up enhanced event listeners
-function setupEnhancedEventListeners() {
-    // Storage button
-    if (DOM.storageBtn) {
-        DOM.storageBtn.addEventListener('click', showStorageOptionsModal);
-    }
-    
-    // Replace bank button functionality
-    if (DOM.bankBtn) {
-        DOM.bankBtn.removeEventListener('click', showBankModal);
-        DOM.bankBtn.addEventListener('click', showEnhancedBankModal);
-    }
-}
-
 // Update heat display
 function updateHeatDisplay() {
     if (!DOM.heatValue) return;
@@ -536,79 +1267,12 @@ function updateHeatDisplay() {
     }
 }
 
-// Generate random market prices for the current location
-function generateMarketPrices() {
-    gameState.market = {};
-    
-    GAME.PRODUCTS.forEach(product => {
-        // Determine if product is available (1 in 8 chance of being unavailable)
-        const isAvailable = Math.random() > 0.125;
-        
-        if (isAvailable) {
-            // Generate a random price within the range
-            const range = product.maxPrice - product.minPrice;
-            let price = Math.floor(Math.random() * range + product.minPrice);
-            
-            // Apply potential modifiers based on location
-            price = applyLocationModifiers(price, product.name);
-            
-            // Store in the market
-            gameState.market[product.name] = price;
-        }
-    });
-}
-
-// Apply price modifiers based on location
-function applyLocationModifiers(basePrice, productName) {
-    let modifier = 1.0; // Default: no modification
-    
-    // Each city has its own price trends
-    switch(gameState.currentCity) {
-        case "New York":
-            // Standard US prices
-            break;
-        case "Los Angeles":
-            if (productName === "Weed") modifier = 0.7; // Cheaper weed
-            break;
-        case "Tokyo":
-            modifier = 1.5; // Everything is more expensive
-            if (productName === "Speed") modifier = 2.0; // Especially speed
-            break;
-        case "London":
-            if (productName === "Cocaine") modifier = 1.3;
-            break;
-        case "Amsterdam":
-            if (productName === "Weed" || productName === "Shrooms") modifier = 0.5; // Much cheaper
-            break;
-        case "Bogotá":
-            if (productName === "Cocaine") modifier = 0.4; // Source location
-            break;
-        // Add more cities with unique modifiers
+// Set up enhanced event listeners
+function setupEnhancedEventListeners() {
+    // Storage button
+    if (DOM.storageBtn) {
+        DOM.storageBtn.addEventListener('click', showStorageOptionsModal);
     }
-    
-    // Each district within cities can have additional modifiers
-    const district = gameState.currentDistrict;
-    
-    // Apply specific district modifiers
-    // These are just examples, you can expand with real district effects
-    if (district.includes("Downtown") || 
-        district.includes("Upscale") || 
-        district.includes("Beverly") ||
-        district.includes("Ginza")) {
-        modifier *= 1.2; // Price premium in wealthy areas
-    }
-    
-    if (district.includes("Slum") || 
-        district.includes("Ghetto") || 
-        district.includes("Favela") ||
-        district.includes("Compton")) {
-        modifier *= 0.9; // Slightly cheaper in poor areas but more dangerous
-    }
-    
-    // Random small fluctuation (±5%)
-    modifier *= 0.95 + Math.random() * 0.1;
-    
-    return Math.round(basePrice * modifier);
 }
 
 // Update player stats display
@@ -776,199 +1440,34 @@ function updateMarketDisplay() {
     });
 }
 
-// Update unlocked cities display
+// Update unlocked cities display with sorted cities
 function updateUnlockedCities() {
     // Clear the cities list
     DOM.citiesList.innerHTML = '';
     
+    // Sort cities by unlock cost
+    const sortedCities = getSortedCities();
+    
     // Add each city to the list
-    for (const city in WORLD_MAP) {
+    for (const cityData of sortedCities) {
+        const city = cityData.name;
         const cityInfo = WORLD_MAP[city];
         const listItem = document.createElement('li');
-        listItem.textContent = `${city} ${cityInfo.unlocked ? '✓' : '🔒'}`;
         
-        // Add a class if the city is locked
-        if (!cityInfo.unlocked) {
+        if (cityInfo.unlocked) {
+            listItem.textContent = `${city} ✓`;
+        } else {
+            listItem.textContent = `${city} 🔒 $${formatMoney(cityInfo.unlockCost)}`;
             listItem.classList.add('locked');
+            
+            // If player can unlock this city, add a special class
+            if (canUnlockCity(city)) {
+                listItem.classList.add('can-unlock');
+            }
         }
         
         DOM.citiesList.appendChild(listItem);
     }
-}
-
-// Show travel options modal
-function showTravelOptions() {
-    DOM.modalTitle.textContent = "Travel";
-    let content = '<div class="travel-options">';
-    
-    // Current city's districts
-    content += `<h3>Districts in ${gameState.currentCity}</h3>`;
-    content += '<div class="districts-list">';
-    
-    WORLD_MAP[gameState.currentCity].districts.forEach(district => {
-        const isCurrentDistrict = district === gameState.currentDistrict;
-        content += `
-            <div class="district-option ${isCurrentDistrict ? 'current' : ''}" 
-                 data-district="${district}" 
-                 data-city="${gameState.currentCity}"
-                 ${isCurrentDistrict ? 'disabled' : ''}>
-                ${district} ${isCurrentDistrict ? '(current)' : ''}
-            </div>
-        `;
-    });
-    content += '</div>';
-    
-    // Other unlocked cities
-    content += '<h3>Other Cities</h3>';
-    content += '<div class="cities-list">';
-    
-    for (const city in WORLD_MAP) {
-        if (city !== gameState.currentCity) {
-            const isLocked = !WORLD_MAP[city].unlocked;
-            content += `
-                <div class="city-option ${isLocked ? 'locked' : ''}" 
-                     data-city="${city}"
-                     ${isLocked ? 'disabled' : ''}>
-                    ${city} ${isLocked ? '🔒' : ''} 
-                    ${isLocked ? `<span class="unlock-hint">(unlock at $10M)</span>` : ''}
-                </div>
-            `;
-        }
-    }
-    content += '</div>';
-    content += '</div>';
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners to district options
-    document.querySelectorAll('.district-option:not([disabled])').forEach(option => {
-        option.addEventListener('click', () => {
-            enhancedTravelToDistrict(option.dataset.district);
-            closeModal();
-        });
-    });
-    
-    // Add event listeners to city options
-    document.querySelectorAll('.city-option:not(.locked)').forEach(option => {
-        option.addEventListener('click', () => {
-            enhancedTravelToCity(option.dataset.city);
-            closeModal();
-        });
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
-}
-
-// Travel to a different district (original function kept for reference)
-function travelToDistrict(district) {
-    if (district !== gameState.currentDistrict) {
-        gameState.currentDistrict = district;
-        generateMarketPrices();
-        updateLocationDisplay();
-        updateMarketDisplay();
-        addPlayerActionEvent(`You've traveled to ${district}.`);
-        addDrugNewsEvent(`Market prices in ${district} have been updated.`);
-    }
-}
-
-// Enhanced travel to a different district - now advances time
-function enhancedTravelToDistrict(district) {
-    if (district !== gameState.currentDistrict) {
-        gameState.currentDistrict = district;
-        
-        // Advance the day
-        advanceDayForTravel();
-        
-        // Generate new market prices
-        generateMarketPrices();
-        updateLocationDisplay();
-        updateMarketDisplay();
-        
-        addPlayerActionEvent(`You've traveled to ${district}.`);
-        addDrugNewsEvent(`Market prices in ${district} have been updated.`);
-    }
-}
-
-// Travel to a different city (original function kept for reference)
-function travelToCity(city) {
-    if (city !== gameState.currentCity && WORLD_MAP[city].unlocked) {
-        gameState.currentCity = city;
-        gameState.currentDistrict = WORLD_MAP[city].districts[0];
-        generateMarketPrices();
-        updateLocationDisplay();
-        updateMarketDisplay();
-        addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
-        addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
-    }
-}
-
-// Enhanced travel to a different city - now advances time
-function enhancedTravelToCity(city) {
-    if (city !== gameState.currentCity && WORLD_MAP[city].unlocked) {
-        gameState.currentCity = city;
-        gameState.currentDistrict = WORLD_MAP[city].districts[0];
-        
-        // Advance the day more for traveling to a different city
-        advanceDayForTravel(true);
-        
-        // Generate new market prices
-        generateMarketPrices();
-        updateLocationDisplay();
-        updateMarketDisplay();
-        
-        addPlayerActionEvent(`You've traveled to ${city}, ${gameState.currentDistrict}.`);
-        addDrugNewsEvent(`Market prices in ${city} reflect local supply and demand.`);
-    }
-}
-
-// Function to advance the day when traveling
-function advanceDayForTravel(isCityTravel = false) {
-    // City travel takes more time than district travel
-    const daysToAdvance = isCityTravel ? 2 : 1;
-    
-    for (let i = 0; i < daysToAdvance; i++) {
-        // Apply interest to debt
-        const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
-        gameState.debt += interestAmount;
-        
-        // Apply interest to bank accounts
-        applyBankInterest();
-        
-        // Apply heat decay for police system
-        decreaseHeatLevel();
-        
-        // Increment the day
-        gameState.day++;
-        
-        // Check if game is over after day advancement
-        if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-            endGame();
-            return;
-        }
-        
-        // Add events to log
-        if (i === 0) { // Only add these messages once
-            addPlayerActionEvent(`Day ${gameState.day}: Travel day.`);
-            
-            if (interestAmount > 0) {
-                addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
-            }
-        }
-    }
-    
-    // Update displays
-    updatePlayerStats();
-    updateHeatDisplay();
-}
-
-// Unlock all cities in the world map
-function unlockAllCities() {
-    for (const city in WORLD_MAP) {
-        WORLD_MAP[city].unlocked = true;
-    }
-    updateUnlockedCities();
-    addDrugNewsEvent("Breaking News: Global markets are now open to your operation!");
 }
 
 // Show buy modal for a product
@@ -1029,7 +1528,7 @@ function showBuyModal(productName) {
     DOM.modalContainer.classList.remove('hidden');
 }
 
-// Execute a product purchase
+// Execute a product purchase with heat increase
 function buyProduct(productName, quantity) {
     const price = gameState.market[productName];
     const totalCost = price * quantity;
@@ -1061,6 +1560,38 @@ function buyProduct(productName, quantity) {
         // Add event
         addPlayerActionEvent(`Bought ${quantity} ${productName} for $${formatMoney(totalCost)}.`);
     }
+}
+
+// Increase heat level based on transaction size
+function increaseHeatLevel(transactionValue) {
+    // Calculate city's police activity modifier
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
+    
+    // Larger transactions draw more attention, modified by city's police presence
+    const heatIncrease = Math.log10(transactionValue) * 2 * policeModifier;
+    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
+    
+    // If heat is high, give warnings to player
+    if (gameState.police.heatLevel > 70) {
+        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
+    } else if (gameState.police.heatLevel > 40) {
+        addPlayerActionEvent("Note: Your activities are attracting some police attention.");
+    }
+}
+
+// Decrease heat level over time - influenced by city
+function decreaseHeatLevel() {
+    // Calculate city's police modifier for heat decay
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const policeModifier = cityInfo ? (cityInfo.policeActivity || 1.0) : 1.0;
+    
+    // Cities with high police activity have slower heat decay
+    const baseDecay = 5; // 5 points per day
+    const decay = baseDecay / policeModifier;
+    
+    // Heat naturally decreases
+    gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - decay);
 }
 
 // Show sell modal for a product
@@ -1114,7 +1645,7 @@ function showSellModal(productName) {
     DOM.modalContainer.classList.remove('hidden');
 }
 
-// Execute a product sale
+// Execute a product sale with heat increase
 function sellProduct(productName, quantity) {
     const price = gameState.market[productName];
     const totalValue = price * quantity;
@@ -1141,6 +1672,7 @@ function sellProduct(productName, quantity) {
     updatePlayerStats();
     updateInventoryDisplay();
     updateMarketDisplay();
+    updateUnlockedCities(); // Check if player can unlock new cities
     
     // Add event
     addPlayerActionEvent(`Sold ${quantity} ${productName} for $${formatMoney(totalValue)}.`);
@@ -1206,6 +1738,7 @@ function borrowMoney(amount) {
     gameState.debt += amount;
     
     updatePlayerStats();
+    updateUnlockedCities(); // Check if player can unlock new cities
     addPlayerActionEvent(`Borrowed $${formatMoney(amount)} from the Loan Shark. Your debt is now $${formatMoney(gameState.debt)}.`);
 }
 
@@ -1223,60 +1756,6 @@ function repayDebt(amount) {
     if (gameState.debt === 0) {
         addPlayerActionEvent("You've paid off your debt completely!");
     }
-}
-
-// Original bank modal (kept for reference)
-function showBankModal() {
-    DOM.modalTitle.textContent = "Bank";
-    
-    let content = `
-        <div class="bank-modal">
-            <p>Account balance: $${formatMoney(gameState.bankAccount)}</p>
-            <p>Interest rate: 2% per day</p>
-            
-            <div class="bank-options">
-                <div class="deposit-section">
-                    <h3>Deposit Money</h3>
-                    <div class="input-group">
-                        <label for="deposit-amount">Amount to deposit:</label>
-                        <input type="number" id="deposit-amount" min="100" max="${gameState.cash}" step="100" value="${Math.min(1000, gameState.cash)}">
-                    </div>
-                    <button id="confirm-deposit" ${gameState.cash <= 0 ? 'disabled' : ''}>Deposit</button>
-                </div>
-                
-                <div class="withdraw-section">
-                    <h3>Withdraw Money</h3>
-                    <div class="input-group">
-                        <label for="withdraw-amount">Amount to withdraw:</label>
-                        <input type="number" id="withdraw-amount" min="100" max="${gameState.bankAccount}" step="100" value="${Math.min(1000, gameState.bankAccount)}">
-                    </div>
-                    <button id="confirm-withdraw" ${gameState.bankAccount <= 0 ? 'disabled' : ''}>Withdraw</button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners
-    document.getElementById('confirm-deposit').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('deposit-amount').value) || 0;
-        if (amount > 0 && amount <= gameState.cash) {
-            depositMoney(amount);
-            closeModal();
-        }
-    });
-    
-    document.getElementById('confirm-withdraw').addEventListener('click', () => {
-        const amount = parseInt(document.getElementById('withdraw-amount').value) || 0;
-        if (amount > 0 && amount <= gameState.bankAccount) {
-            withdrawMoney(amount);
-            closeModal();
-        }
-    });
-    
-    // Show the modal
-    DOM.modalContainer.classList.remove('hidden');
 }
 
 // Show enhanced bank modal
@@ -1518,6 +1997,7 @@ function depositToAccount(accountName, amount) {
     
     // Update displays
     updatePlayerStats();
+    updateUnlockedCities(); // Check if player can unlock new cities now
     
     // Add event
     addPlayerActionEvent(`Deposited $${formatMoney(amount)} to ${accountName}${depositFee > 0 ? ` (Fee: $${formatMoney(fee)})` : ''}.`);
@@ -1545,6 +2025,7 @@ function withdrawFromAccount(accountName, amount) {
     
     // Update displays
     updatePlayerStats();
+    updateUnlockedCities(); // Check if player can unlock new cities now
     
     // Add event
     addPlayerActionEvent(`Withdrew $${formatMoney(amount)} from ${accountName}${withdrawalFee > 0 ? ` (Fee: $${formatMoney(fee)})` : ''}.`);
@@ -1607,112 +2088,6 @@ function updateTotalSavings() {
     gameState.banking.totalSavings = total;
 }
 
-// Deposit money in the bank (original function kept for reference)
-function depositMoney(amount) {
-    gameState.cash -= amount;
-    gameState.bankAccount += amount;
-    
-    updatePlayerStats();
-    addPlayerActionEvent(`Deposited $${formatMoney(amount)} in the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
-}
-
-// Withdraw money from the bank (original function kept for reference)
-function withdrawMoney(amount) {
-    gameState.bankAccount -= amount;
-    gameState.cash += amount;
-    
-    updatePlayerStats();
-    addPlayerActionEvent(`Withdrew $${formatMoney(amount)} from the bank. Your balance is now $${formatMoney(gameState.bankAccount)}.`);
-}
-
-// End the current day and proceed to the next (original function kept for reference)
-function endDay() {
-    // Apply interest to debt
-    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
-    gameState.debt += interestAmount;
-    
-    // Apply interest to bank account
-    const bankInterest = Math.floor(gameState.bankAccount * 0.02);
-    gameState.bankAccount += bankInterest;
-    
-    // Increment the day
-    gameState.day++;
-    
-    // Check if game is over
-    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-        endGame();
-        return;
-    }
-    
-    // Generate random events
-    generateRandomEvents();
-    
-    // Generate new market prices
-    generateMarketPrices();
-    
-    // Update displays
-    updatePlayerStats();
-    updateMarketDisplay();
-    
-    // Add events to log
-    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
-    
-    if (interestAmount > 0) {
-        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
-    }
-    
-    if (bankInterest > 0) {
-        addPlayerActionEvent(`Interest earned in bank: $${formatMoney(bankInterest)}.`);
-    }
-    
-    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
-}
-
-// Enhanced end day function with all new features
-function enhancedEndDay() {
-    // Apply interest to debt
-    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
-    gameState.debt += interestAmount;
-    
-    // Apply interest to bank accounts (new system)
-    applyBankInterest();
-    
-    // Apply heat decay for police system
-    decreaseHeatLevel();
-    
-    // Increment the day
-    gameState.day++;
-    
-    // Check if game is over
-    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-        endGame();
-        return;
-    }
-    
-    // Generate random events with enhanced system
-    enhancedRandomEvents();
-    
-    // Check for police encounter
-    checkPoliceEncounter();
-    
-    // Generate new market prices
-    generateMarketPrices();
-    
-    // Update displays
-    updatePlayerStats();
-    updateMarketDisplay();
-    updateHeatDisplay();
-    
-    // Add events to log
-    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
-    
-    if (interestAmount > 0) {
-        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
-    }
-    
-    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
-}
-
 // Apply daily interest to all bank accounts
 function applyBankInterest() {
     // Backward compatibility check
@@ -1758,471 +2133,6 @@ function applyBankInterest() {
     
     // Update total savings
     updateTotalSavings();
-}
-
-// Generate random events with enhanced system
-function enhancedRandomEvents() {
-    // Police bust chance
-    if (Math.random() < ENHANCED_EVENTS.POLICE_BUST_CHANCE) {
-        policeBust();
-    }
-    
-    // Price spike chance
-    if (Math.random() < ENHANCED_EVENTS.PRICE_CHANGE_CHANCE) {
-        priceSpike();
-    }
-    
-    // Product scarcity chance
-    if (Math.random() < ENHANCED_EVENTS.PRODUCT_SCARCITY_CHANCE) {
-        productScarcity();
-    }
-    
-    // Price crash chance (new)
-    if (Math.random() < ENHANCED_EVENTS.PRICE_CRASH_CHANCE) {
-        priceCrash();
-    }
-    
-    // Market flood chance (new)
-    if (Math.random() < ENHANCED_EVENTS.MARKET_FLOOD_CHANCE) {
-        marketFlood();
-    }
-    
-    // High demand chance (new)
-    if (Math.random() < ENHANCED_EVENTS.HIGH_DEMAND_CHANCE) {
-        highDemand();
-    }
-    
-    // Gang war chance (new)
-    if (Math.random() < ENHANCED_EVENTS.GANG_WAR_CHANCE) {
-        gangWar();
-    }
-}
-
-// Price crash event - the opposite of a price spike
-function priceCrash() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
-    
-    // Get the base price range
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
-    
-    // Crash the price to 30-60% of minimum price
-    const crashMultiplier = 0.3 + Math.random() * 0.3;
-    const newPrice = Math.round(productInfo.minPrice * crashMultiplier);
-    
-    // Set the new price
-    gameState.market[randomProduct] = newPrice;
-    
-    // Add event
-    addDrugNewsEvent(`📉 Price crash! ${randomProduct} prices have plummeted to $${formatMoney(newPrice)} due to market flooding.`);
-}
-
-// Market flood event - makes a product very cheap and abundant
-function marketFlood() {
-    // Choose random product
-    const productsArray = GAME.PRODUCTS.map(p => p.name);
-    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
-    
-    // Get the base price range
-    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
-    
-    // Lower the price significantly (20-40% of minimum)
-    const floodPrice = Math.round(productInfo.minPrice * (0.2 + Math.random() * 0.2));
-    
-    // Set the new price
-    gameState.market[randomProduct] = floodPrice;
-    
-    // Add event
-    addDrugNewsEvent(`🌊 Market flood! A massive shipment of ${randomProduct} has flooded ${gameState.currentCity}, dropping prices to $${formatMoney(floodPrice)}.`);
-}
-
-// High demand event - raises prices of all products in an area
-function highDemand() {
-    const demandMultiplier = 1.5 + Math.random();  // 1.5-2.5x price increase
-    let affectedProducts = [];
-    
-    // Apply price increase to all available products
-    for (const product in gameState.market) {
-        const newPrice = Math.round(gameState.market[product] * demandMultiplier);
-        gameState.market[product] = newPrice;
-        affectedProducts.push(product);
-    }
-    
-    // Add event
-    addDrugNewsEvent(`🔥 High demand in ${gameState.currentDistrict}! Prices have increased for all available products due to high local demand.`);
-    
-    // Update market display
-    updateMarketDisplay();
-}
-
-// Gang war event - affects prices and can result in injury
-function gangWar() {
-    // Increase some prices due to territory disputes
-    let affectedProducts = [];
-    const productKeys = Object.keys(gameState.market);
-    
-    // Select 1-3 random products to affect
-    const numAffected = 1 + Math.floor(Math.random() * 3);
-    for (let i = 0; i < numAffected && i < productKeys.length; i++) {
-        const randomIndex = Math.floor(Math.random() * productKeys.length);
-        const product = productKeys[randomIndex];
-        
-        // Remove this product from future consideration
-        productKeys.splice(randomIndex, 1);
-        
-        // Increase price by 30-100%
-        const warMultiplier = 1.3 + Math.random() * 0.7;
-        gameState.market[product] = Math.round(gameState.market[product] * warMultiplier);
-        affectedProducts.push(product);
-    }
-    
-    // Add event
-    addDrugNewsEvent(`⚔️ Gang war! Violence has broken out in ${gameState.currentDistrict}! Territory disputes have affected product availability and prices.`);
-    
-    // Chance of player getting injured (losing money for medical bills)
-    if (Math.random() < 0.4 && gameState.cash > 0) {
-        const injuryCost = Math.min(gameState.cash * 0.15, 5000);  // 15% of cash or $5,000, whichever is less
-        gameState.cash -= Math.round(injuryCost);
-        addPlayerActionEvent(`You were injured in the gang war crossfire! Medical bills cost you $${formatMoney(Math.round(injuryCost))}.`);
-        updatePlayerStats();
-    }
-    
-    // Update market display
-    updateMarketDisplay();
-}
-
-// Increase heat level based on transaction size
-function increaseHeatLevel(transactionValue) {
-    // Larger transactions draw more attention
-    const heatIncrease = Math.log10(transactionValue) * 2;
-    gameState.police.heatLevel = Math.min(100, gameState.police.heatLevel + heatIncrease);
-    
-    // If heat is high, give warnings to player
-    if (gameState.police.heatLevel > 70) {
-        addPlayerActionEvent("⚠️ Your heat level is very high. Lay low or bribe officials to reduce police attention.");
-    } else if (gameState.police.heatLevel > 40) {
-        addPlayerActionEvent("Note: Your activities are attracting some police attention.");
-    }
-}
-
-// Decrease heat level over time
-function decreaseHeatLevel() {
-    // Heat naturally decreases by 5 points per day
-    gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 5);
-}
-
-// Check for police encounters
-function checkPoliceEncounter() {
-    // Skip if player had an encounter recently (last 3 days)
-    if (gameState.day - gameState.police.lastEncounter < 3) {
-        return;
-    }
-    
-    // Get district police activity modifier
-    const districtModifier = getDistrictPoliceLevel(gameState.currentDistrict);
-    
-    // Calculate encounter probability based on heat level and district
-    const encounterProbability = (gameState.police.heatLevel / 100) * districtModifier * 0.5;
-    
-    if (Math.random() < encounterProbability) {
-        // Police encounter happens!
-        triggerPoliceEncounter();
-    }
-}
-
-// Determine district police activity level
-function getDistrictPoliceLevel(district) {
-    // Define high security districts
-    const highSecurity = ["Manhattan", "Beverly Hills", "Ginza", "Soho", "Downtown", "Akihabara"];
-    
-    // Define low security districts
-    const lowSecurity = ["Bronx", "Compton", "Rocinha", "Favela", "Slum", "Makoko", "Dharavi"];
-    
-    if (highSecurity.some(area => district.includes(area))) {
-        return POLICE_SYSTEM.districtActivity.high;
-    } else if (lowSecurity.some(area => district.includes(area))) {
-        return POLICE_SYSTEM.districtActivity.low;
-    }
-    
-    return POLICE_SYSTEM.districtActivity.medium;
-}
-
-// Trigger a police encounter
-function triggerPoliceEncounter() {
-    // Determine the type of encounter based on heat level
-    let encounterType;
-    
-    if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.BUST.heatThreshold) {
-        encounterType = POLICE_SYSTEM.encounters.BUST;
-    } else if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.RAID.heatThreshold) {
-        encounterType = POLICE_SYSTEM.encounters.RAID;
-    } else {
-        encounterType = POLICE_SYSTEM.encounters.SEARCH;
-    }
-    
-    // Record the encounter
-    gameState.police.lastEncounter = gameState.day;
-    
-    // Show encounter modal
-    showPoliceEncounterModal(encounterType);
-}
-
-// Show police encounter modal
-function showPoliceEncounterModal(encounterType) {
-    DOM.modalTitle.textContent = encounterType.name;
-    
-    // Calculate bribe amount based on heat level and player's cash
-    const minBribe = 1000 + (gameState.police.heatLevel * 100);
-    const recommendedBribe = Math.min(Math.round(gameState.cash * 0.15), minBribe);
-    const canAffordBribe = gameState.cash >= minBribe;
-    
-    // Calculate chances of success for different options
-    const runChance = Math.max(10, 50 - gameState.police.heatLevel / 2);
-    const fightChance = Math.max(5, 30 - gameState.police.heatLevel / 2);
-    const bribeEffectiveness = Math.min(90, Math.round(recommendedBribe / minBribe * 100));
-    
-    let content = `
-        <div class="police-encounter">
-            <p class="encounter-description">${encounterType.description} They're checking everyone in ${gameState.currentDistrict}.</p>
-            <p class="heat-level">Your current heat level: <span class="heat-value">${Math.round(gameState.police.heatLevel)}/100</span></p>
-            
-            <div class="encounter-options">
-                <div class="option">
-                    <h4>Submit to Search</h4>
-                    <p>Cooperate with the police and hope they don't find anything.</p>
-                    <p>Success chance: ${Math.round(encounterType.successChance * 100)}%</p>
-                    <button id="submit-option">Submit</button>
-                </div>
-                
-                <div class="option">
-                    <h4>Run</h4>
-                    <p>Try to escape the situation. Higher risk but may avoid all consequences.</p>
-                    <p>Success chance: ${runChance}%</p>
-                    <button id="run-option">Run</button>
-                </div>
-                
-                <div class="option">
-                    <h4>Fight</h4>
-                    <p>Resist the police. Very high risk but may avoid all consequences.</p>
-                    <p>Success chance: ${fightChance}%</p>
-                    <button id="fight-option">Fight</button>
-                </div>
-                
-                <div class="option">
-                    <h4>Bribe</h4>
-                    <p>Offer a bribe to make them look the other way.</p>
-                    <p>Minimum bribe: $${formatMoney(minBribe)}</p>
-                    <p>Effectiveness: ${bribeEffectiveness}%</p>
-                    <button id="bribe-option" ${!canAffordBribe ? 'disabled' : ''}>
-                        ${canAffordBribe ? `Bribe $${formatMoney(recommendedBribe)}` : 'Cannot afford bribe'}
-                    </button>
-                </div>
-            </div>
-        </div>
-    `;
-    
-    DOM.modalContent.innerHTML = content;
-    
-    // Add event listeners
-    document.getElementById('submit-option').addEventListener('click', () => {
-        handlePoliceOption('submit', encounterType, recommendedBribe);
-    });
-    
-    document.getElementById('run-option').addEventListener('click', () => {
-        handlePoliceOption('run', encounterType, recommendedBribe, runChance);
-    });
-    
-    document.getElementById('fight-option').addEventListener('click', () => {
-        handlePoliceOption('fight', encounterType, recommendedBribe, fightChance);
-    });
-    
-    const bribeButton = document.getElementById('bribe-option');
-    if (!bribeButton.disabled) {
-        bribeButton.addEventListener('click', () => {
-            handlePoliceOption('bribe', encounterType, recommendedBribe, bribeEffectiveness);
-        });
-    }
-    
-    // Show the modal - can't be closed without selecting an option
-    DOM.modalContainer.classList.remove('hidden');
-    DOM.modalClose.style.display = 'none';
-}
-
-// Handle police encounter option selection
-function handlePoliceOption(option, encounterType, bribeAmount, successChance = null) {
-    // Restore the close button
-    DOM.modalClose.style.display = 'block';
-    
-    let result, message;
-    
-    switch(option) {
-        case 'submit':
-            // Use the encounter's built-in success chance
-            result = Math.random() < encounterType.successChance;
-            
-            if (result) {
-                message = "The police search you but don't find anything suspicious. You're free to go.";
-                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 10);
-            } else {
-                applyPoliceConsequences(encounterType);
-                message = `The police search you and find incriminating evidence. ${getConsequencesDescription(encounterType)}`;
-            }
-            break;
-            
-        case 'run':
-            result = Math.random() < (successChance / 100);
-            
-            if (result) {
-                message = "You manage to slip away from the police! However, they're now more suspicious of you.";
-                gameState.police.heatLevel += 15; // Running increases heat even if successful
-            } else {
-                // Failed run has worse consequences
-                applyPoliceConsequences(encounterType, 1.5);
-                message = `You try to run but are caught! The police are now much more suspicious. ${getConsequencesDescription(encounterType, 1.5)}`;
-                gameState.police.heatLevel += 30;
-            }
-            break;
-            
-        case 'fight':
-            result = Math.random() < (successChance / 100);
-            
-            if (result) {
-                message = "Against all odds, you manage to fight your way out! You should lay low for a while.";
-                gameState.police.heatLevel += 50; // Fighting dramatically increases heat
-            } else {
-                // Failed fight has severe consequences
-                applyPoliceConsequences(encounterType, 2);
-                message = `You try to fight but are overwhelmed! ${getConsequencesDescription(encounterType, 2)}`;
-                gameState.police.heatLevel = 100; // Maximum heat
-                
-                // Additional jail time for fighting
-                if (!encounterType.consequences.jailTime) {
-                    serveJailTime(2);
-                } else {
-                    serveJailTime(encounterType.consequences.jailTime + 2);
-                }
-            }
-            break;
-            
-        case 'bribe':
-            result = Math.random() < (successChance / 100);
-            
-            // Pay the bribe regardless of outcome
-            gameState.cash -= bribeAmount;
-            gameState.police.bribesGiven++;
-            
-            if (result) {
-                message = "The officer pockets your cash and tells his colleagues to leave you alone.";
-                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 30);
-            } else {
-                message = "The officer takes your money but decides to search you anyway!";
-                applyPoliceConsequences(encounterType, 0.5); // Reduced consequences for attempted bribe
-                message += ` ${getConsequencesDescription(encounterType, 0.5)}`;
-            }
-            break;
-    }
-    
-    // Show result message
-    DOM.modalContent.innerHTML = `
-        <div class="police-result">
-            <p>${message}</p>
-            <button id="continue-btn">Continue</button>
-        </div>
-    `;
-    
-    // Add event listener to continue button
-    document.getElementById('continue-btn').addEventListener('click', () => {
-        closeModal();
-        updatePlayerStats();
-        updateInventoryDisplay();
-        updateHeatDisplay();
-    });
-}
-
-// Apply consequences from police encounter
-function applyPoliceConsequences(encounterType, multiplier = 1) {
-    const consequences = encounterType.consequences;
-    
-    // Lose inventory if applicable
-    if (consequences.inventory) {
-        const inventoryLossRatio = consequences.inventory * multiplier;
-        for (const product in gameState.inventory.items) {
-            const lostAmount = Math.ceil(gameState.inventory.items[product] * inventoryLossRatio);
-            gameState.inventory.items[product] -= lostAmount;
-            
-            // Update inventory space
-            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
-            const weightPerUnit = productInfo ? productInfo.weight : 1;
-            gameState.inventory.space.used -= lostAmount * weightPerUnit;
-            
-            // Remove product if quantity is zero or negative
-            if (gameState.inventory.items[product] <= 0) {
-                delete gameState.inventory.items[product];
-            }
-        }
-    }
-    
-    // Lose cash if applicable
-    if (consequences.cash) {
-        const cashLoss = gameState.cash * consequences.cash * multiplier;
-        gameState.cash -= Math.round(cashLoss);
-        if (gameState.cash < 0) gameState.cash = 0;
-    }
-    
-    // Handle jail time if applicable
-    if (consequences.jailTime) {
-        serveJailTime(consequences.jailTime);
-    }
-    
-    // Update displays
-    updatePlayerStats();
-    updateInventoryDisplay();
-}
-
-// Serve jail time
-function serveJailTime(days) {
-    if (days <= 0) return;
-    
-    const jailDays = Math.round(days);
-    
-    // Advance game time
-    gameState.day += jailDays;
-    
-    // Apply interest to debt for each day
-    const totalInterest = gameState.debt * Math.pow(1 + GAME.INITIAL.INTEREST_RATE, jailDays) - gameState.debt;
-    gameState.debt += Math.round(totalInterest);
-    
-    // Add event
-    addPlayerActionEvent(`You served ${jailDays} days in jail. Your debt accrued $${formatMoney(Math.round(totalInterest))} in interest.`);
-    
-    // Check if game is over after jail time
-    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
-        endGame();
-    }
-}
-
-// Get description of consequences
-function getConsequencesDescription(encounterType, multiplier = 1) {
-    const consequences = encounterType.consequences;
-    let description = "";
-    
-    if (consequences.inventory) {
-        const percent = Math.round(consequences.inventory * multiplier * 100);
-        description += `They confiscate ${percent}% of your inventory. `;
-    }
-    
-    if (consequences.cash) {
-        const percent = Math.round(consequences.cash * multiplier * 100);
-        description += `You lose ${percent}% of your cash as fines. `;
-    }
-    
-    if (consequences.jailTime) {
-        const days = Math.round(consequences.jailTime * multiplier);
-        description += `You're sentenced to ${days} days in jail.`;
-    }
-    
-    return description;
 }
 
 // Function to show available storage options
@@ -2303,28 +2213,379 @@ function purchaseStorage(propertyName) {
         // Update displays
         updatePlayerStats();
         updateInventoryDisplay();
+        updateUnlockedCities(); // Check if player can unlock new cities
         
         // Add event
         addPlayerActionEvent(`Purchased ${propertyName} for $${formatMoney(property.cost)}. Your storage capacity is now ${gameState.storage.totalCapacity}.`);
     }
 }
 
-// Generate random events for the day (original function kept for reference)
-function generateRandomEvents() {
-    // Chance for cop bust
-    if (Math.random() < GAME.EVENTS.POLICE_BUST_CHANCE) {
+// Enhanced end day function with all new features
+function enhancedEndDay() {
+    // Apply interest to debt
+    const interestAmount = Math.floor(gameState.debt * GAME.INITIAL.INTEREST_RATE);
+    gameState.debt += interestAmount;
+    
+    // Apply interest to bank accounts (new system)
+    applyBankInterest();
+    
+    // Apply heat decay for police system
+    decreaseHeatLevel();
+    
+    // Increment the day
+    gameState.day++;
+    
+    // Check if game is over
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+        return;
+    }
+    
+    // Generate random events with enhanced system
+    enhancedRandomEvents();
+    
+    // Check for police encounter
+    enhancedPoliceEncounter();
+    
+    // Generate new market prices
+    enhancedMarketPrices();
+    
+    // Update displays
+    updatePlayerStats();
+    updateMarketDisplay();
+    updateHeatDisplay();
+    updateUnlockedCities(); // Check if player can unlock new cities
+    
+    // Add events to log
+    addPlayerActionEvent(`Day ${gameState.day}: A new day begins.`);
+    
+    if (interestAmount > 0) {
+        addPlayerActionEvent(`Interest added to debt: $${formatMoney(interestAmount)}.`);
+    }
+    
+    addDrugNewsEvent(`Market prices have updated for day ${gameState.day}.`);
+}
+
+// Generate random events with enhanced system
+function enhancedRandomEvents() {
+    // Get the city's effect on events
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const volatilityModifier = cityInfo ? cityInfo.marketVolatility || 1.0 : 1.0;
+    const gangWarModifier = cityInfo && cityInfo.gangWarChance ? cityInfo.gangWarChance : 1.0;
+    
+    // Police bust chance - higher in high-police activity cities
+    const policeModifier = cityInfo ? cityInfo.policeActivity || 1.0 : 1.0;
+    if (Math.random() < ENHANCED_EVENTS.POLICE_BUST_CHANCE * policeModifier) {
         policeBust();
     }
     
-    // Chance for price spike on a random product
-    if (Math.random() < GAME.EVENTS.PRICE_CHANGE_CHANCE) {
+    // Price spike chance - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CHANGE_CHANCE * volatilityModifier) {
         priceSpike();
     }
     
-    // Chance for product scarcity
-    if (Math.random() < GAME.EVENTS.PRODUCT_SCARCITY_CHANCE) {
+    // Product scarcity chance - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRODUCT_SCARCITY_CHANCE * volatilityModifier) {
         productScarcity();
     }
+    
+    // Price crash chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.PRICE_CRASH_CHANCE * volatilityModifier) {
+        priceCrash();
+    }
+    
+    // Market flood chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.MARKET_FLOOD_CHANCE * volatilityModifier) {
+        marketFlood();
+    }
+    
+    // High demand chance (new) - affected by market volatility
+    if (Math.random() < ENHANCED_EVENTS.HIGH_DEMAND_CHANCE * volatilityModifier) {
+        highDemand();
+    }
+    
+    // Gang war chance (new) - affected by city's gang activity
+    if (Math.random() < ENHANCED_EVENTS.GANG_WAR_CHANCE * gangWarModifier) {
+        enhancedGangWar();
+    }
+}
+
+// Price crash event - the opposite of a price spike
+function priceCrash() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    
+    // Crash the price to 30-60% of minimum price
+    const crashMultiplier = 0.3 + Math.random() * 0.3;
+    const newPrice = Math.round(productInfo.minPrice * crashMultiplier);
+    
+    // Set the new price
+    gameState.market[randomProduct] = newPrice;
+    
+    // Add event
+    addDrugNewsEvent(`📉 Price crash! ${randomProduct} prices have plummeted to $${formatMoney(newPrice)} due to market flooding.`);
+}
+
+// Market flood event - makes a product very cheap and abundant
+function marketFlood() {
+    // Choose random product
+    const productsArray = GAME.PRODUCTS.map(p => p.name);
+    const randomProduct = productsArray[Math.floor(Math.random() * productsArray.length)];
+    
+    // Get the base price range
+    const productInfo = GAME.PRODUCTS.find(p => p.name === randomProduct);
+    
+    // Lower the price significantly (20-40% of minimum)
+    const floodPrice = Math.round(productInfo.minPrice * (0.2 + Math.random() * 0.2));
+    
+    // Set the new price
+    gameState.market[randomProduct] = floodPrice;
+    
+    // Add event
+    addDrugNewsEvent(`🌊 Market flood! A massive shipment of ${randomProduct} has flooded ${gameState.currentCity}, dropping prices to $${formatMoney(floodPrice)}.`);
+}
+
+// High demand event - raises prices of all products in an area
+function highDemand() {
+    const demandMultiplier = 1.5 + Math.random();  // 1.5-2.5x price increase
+    let affectedProducts = [];
+    
+    // Apply price increase to all available products
+    for (const product in gameState.market) {
+        const newPrice = Math.round(gameState.market[product] * demandMultiplier);
+        gameState.market[product] = newPrice;
+        affectedProducts.push(product);
+    }
+    
+    // Add event
+    addDrugNewsEvent(`🔥 High demand in ${gameState.currentDistrict}! Prices have increased for all available products due to high local demand.`);
+    
+    // Update market display
+    updateMarketDisplay();
+}
+
+// Determine district police activity level
+function getDistrictPoliceLevel(district) {
+    // Define high security districts
+    const highSecurity = ["Manhattan", "Beverly Hills", "Ginza", "Soho", "Downtown", "Akihabara"];
+    
+    // Define low security districts
+    const lowSecurity = ["Bronx", "Compton", "Rocinha", "Favela", "Slum", "Makoko", "Dharavi"];
+    
+    if (highSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.high;
+    } else if (lowSecurity.some(area => district.includes(area))) {
+        return POLICE_SYSTEM.districtActivity.low;
+    }
+    
+    return POLICE_SYSTEM.districtActivity.medium;
+}
+
+// Trigger a police encounter
+function triggerPoliceEncounter() {
+    // Determine the type of encounter based on heat level
+    let encounterType;
+    
+    if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.BUST.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.BUST;
+    } else if (gameState.police.heatLevel >= POLICE_SYSTEM.encounters.RAID.heatThreshold) {
+        encounterType = POLICE_SYSTEM.encounters.RAID;
+    } else {
+        encounterType = POLICE_SYSTEM.encounters.SEARCH;
+    }
+    
+    // Record the encounter
+    gameState.police.lastEncounter = gameState.day;
+    
+    // Show encounter modal
+    enhancedPoliceModal(encounterType);
+}
+
+// Handle police encounter option selection
+function handlePoliceOption(option, encounterType, bribeAmount, successChance = null) {
+    // Restore the close button
+    DOM.modalClose.style.display = 'block';
+    
+    let result, message;
+    
+    // Get city's corruption modifier for bribes
+    const cityInfo = WORLD_MAP[gameState.currentCity];
+    const corruptionModifier = cityInfo && cityInfo.policeCorruption ? cityInfo.policeCorruption : 1.0;
+    
+    switch(option) {
+        case 'submit':
+            // Use the encounter's built-in success chance
+            result = Math.random() < encounterType.successChance;
+            
+            if (result) {
+                message = "The police search you but don't find anything suspicious. You're free to go.";
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - 10);
+            } else {
+                applyPoliceConsequences(encounterType);
+                message = `The police search you and find incriminating evidence. ${getConsequencesDescription(encounterType)}`;
+            }
+            break;
+            
+        case 'run':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "You manage to slip away from the police! However, they're now more suspicious of you.";
+                gameState.police.heatLevel += 15; // Running increases heat even if successful
+            } else {
+                // Failed run has worse consequences
+                applyPoliceConsequences(encounterType, 1.5);
+                message = `You try to run but are caught! The police are now much more suspicious. ${getConsequencesDescription(encounterType, 1.5)}`;
+                gameState.police.heatLevel += 30;
+            }
+            break;
+            
+        case 'fight':
+            result = Math.random() < (successChance / 100);
+            
+            if (result) {
+                message = "Against all odds, you manage to fight your way out! You should lay low for a while.";
+                gameState.police.heatLevel += 50; // Fighting dramatically increases heat
+            } else {
+                // Failed fight has severe consequences
+                applyPoliceConsequences(encounterType, 2);
+                message = `You try to fight but are overwhelmed! ${getConsequencesDescription(encounterType, 2)}`;
+                gameState.police.heatLevel = 100; // Maximum heat
+                
+                // Additional jail time for fighting
+                if (!encounterType.consequences.jailTime) {
+                    serveJailTime(2);
+                } else {
+                    serveJailTime(encounterType.consequences.jailTime + 2);
+                }
+            }
+            break;
+            
+        case 'bribe':
+            // Bribes are more effective in corrupt cities
+            const adjustedSuccessChance = Math.min(100, successChance * corruptionModifier);
+            result = Math.random() < (adjustedSuccessChance / 100);
+            
+            // Pay the bribe regardless of outcome
+            gameState.cash -= bribeAmount;
+            gameState.police.bribesGiven++;
+            
+            if (result) {
+                message = `The officer pockets your cash and tells his colleagues to leave you alone.${corruptionModifier > 1.2 ? ' In this city, officials are known to be quite cooperative.' : ''}`;
+                gameState.police.heatLevel = Math.max(0, gameState.police.heatLevel - (30 * corruptionModifier));
+            } else {
+                message = "The officer takes your money but decides to search you anyway!";
+                applyPoliceConsequences(encounterType, 0.5); // Reduced consequences for attempted bribe
+                message += ` ${getConsequencesDescription(encounterType, 0.5)}`;
+            }
+            break;
+    }
+    
+    // Show result message
+    DOM.modalContent.innerHTML = `
+        <div class="police-result">
+            <p>${message}</p>
+            <button id="continue-btn">Continue</button>
+        </div>
+    `;
+    
+    // Add event listener to continue button
+    document.getElementById('continue-btn').addEventListener('click', () => {
+        closeModal();
+        updatePlayerStats();
+        updateInventoryDisplay();
+        updateHeatDisplay();
+        updateUnlockedCities(); // Check if player can unlock new cities
+    });
+}
+
+// Apply consequences from police encounter
+function applyPoliceConsequences(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    
+    // Lose inventory if applicable
+    if (consequences.inventory) {
+        const inventoryLossRatio = consequences.inventory * multiplier;
+        for (const product in gameState.inventory.items) {
+            const lostAmount = Math.ceil(gameState.inventory.items[product] * inventoryLossRatio);
+            gameState.inventory.items[product] -= lostAmount;
+            
+            // Update inventory space
+            const productInfo = GAME.PRODUCTS.find(p => p.name === product);
+            const weightPerUnit = productInfo ? productInfo.weight : 1;
+            gameState.inventory.space.used -= lostAmount * weightPerUnit;
+            
+            // Remove product if quantity is zero or negative
+            if (gameState.inventory.items[product] <= 0) {
+                delete gameState.inventory.items[product];
+            }
+        }
+    }
+    
+    // Lose cash if applicable
+    if (consequences.cash) {
+        const cashLoss = gameState.cash * consequences.cash * multiplier;
+        gameState.cash -= Math.round(cashLoss);
+        if (gameState.cash < 0) gameState.cash = 0;
+    }
+    
+    // Handle jail time if applicable
+    if (consequences.jailTime) {
+        serveJailTime(consequences.jailTime * multiplier);
+    }
+    
+    // Update displays
+    updatePlayerStats();
+    updateInventoryDisplay();
+}
+
+// Serve jail time
+function serveJailTime(days) {
+    if (days <= 0) return;
+    
+    const jailDays = Math.round(days);
+    
+    // Advance game time
+    gameState.day += jailDays;
+    
+    // Apply interest to debt for each day
+    const totalInterest = gameState.debt * Math.pow(1 + GAME.INITIAL.INTEREST_RATE, jailDays) - gameState.debt;
+    gameState.debt += Math.round(totalInterest);
+    
+    // Add event
+    addPlayerActionEvent(`You served ${jailDays} days in jail. Your debt accrued $${formatMoney(Math.round(totalInterest))} in interest.`);
+    
+    // Check if game is over after jail time
+    if (gameState.day > gameState.dayLimit && gameState.dayLimit !== Infinity) {
+        endGame();
+    }
+}
+
+// Get description of consequences
+function getConsequencesDescription(encounterType, multiplier = 1) {
+    const consequences = encounterType.consequences;
+    let description = "";
+    
+    if (consequences.inventory) {
+        const percent = Math.round(consequences.inventory * multiplier * 100);
+        description += `They confiscate ${percent}% of your inventory. `;
+    }
+    
+    if (consequences.cash) {
+        const percent = Math.round(consequences.cash * multiplier * 100);
+        description += `You lose ${percent}% of your cash as fines. `;
+    }
+    
+    if (consequences.jailTime) {
+        const days = Math.round(consequences.jailTime * multiplier);
+        description += `You're sentenced to ${days} days in jail.`;
+    }
+    
+    return description;
 }
 
 // Police bust event
@@ -2394,6 +2655,15 @@ function productScarcity() {
     addDrugNewsEvent(`⚠️ Product shortage! ${randomProduct} is unavailable in ${gameState.currentDistrict} today due to a major bust.`);
 }
 
+// Unlock all cities in the world map
+function unlockAllCities() {
+    for (const city in WORLD_MAP) {
+        WORLD_MAP[city].unlocked = true;
+    }
+    updateUnlockedCities();
+    addDrugNewsEvent("Breaking News: Global markets are now open to your operation!");
+}
+
 // End the game and show final score
 function endGame() {
     // Calculate final score
@@ -2419,6 +2689,14 @@ function endGame() {
                 <p>Bank Balance: $${formatMoney(totalBankValue)}</p>
                 <p>Debt: $${formatMoney(gameState.debt)}</p>
                 <p class="net-worth">Net Worth: $${formatMoney(finalNetWorth)}</p>
+                
+                <div class="empire-summary">
+                    <p>Cities Unlocked: ${Object.values(WORLD_MAP).filter(city => city.unlocked).length}/${Object.keys(WORLD_MAP).length}</p>
+                    <p>Storage Capacity: ${gameState.inventory.space.max}</p>
+                    ${gameState.police ? `<p>Final Heat Level: ${Math.round(gameState.police.heatLevel)}/100</p>` : ''}
+                    ${gameState.storage && gameState.storage.ownedProperties ? 
+                      `<p>Properties Owned: ${Object.keys(gameState.storage.ownedProperties).length}</p>` : ''}
+                </div>
             </div>
             
             <button id="new-game-btn">Play Again</button>
@@ -2489,3 +2767,78 @@ function closeModal() {
 function formatMoney(amount) {
     return amount.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 }
+
+// Helper function to add city styles to the page
+function addCityStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.innerHTML = `
+        /* City progression styling */
+        .cities-list {
+            max-height: 350px;
+            overflow-y: auto;
+        }
+
+        .city-option {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .city-option.can-unlock {
+            border-left-color: var(--highlight);
+            opacity: 1;
+        }
+
+        .city-unlock-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 5px;
+        }
+
+        .unlock-cost {
+            color: var(--secondary);
+            font-size: 0.9em;
+        }
+
+        .unlock-city-btn {
+            padding: 5px 10px;
+            margin: 0;
+            background: linear-gradient(to right, var(--success), #00ff99);
+            font-size: 0.9em;
+        }
+
+        .city-feature {
+            font-size: 0.85em;
+            color: var(--text-secondary);
+            font-style: italic;
+            margin-top: 5px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 5px;
+        }
+
+        /* Police encounter city-specific info */
+        .city-police-info {
+            background-color: rgba(57, 255, 20, 0.1);
+            border-left: 3px solid var(--highlight);
+            padding: 8px;
+            margin-bottom: 15px;
+            font-style: italic;
+        }
+        
+        /* Game over empire summary */
+        .empire-summary {
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px dotted rgba(255, 255, 255, 0.2);
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+// Call this after DOM content loaded
+document.addEventListener('DOMContentLoaded', function() {
+    // Add the city styles to the page
+    addCityStyles();
+});

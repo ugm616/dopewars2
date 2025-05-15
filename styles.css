@@ -649,3 +649,29 @@ select {
     background-size: 20px 20px;
     z-index: -1;
 }
+
+#right-panel {
+    display: flex;
+    flex-direction: column;
+}
+
+#actions-panel {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+}
+
+#actions-panel button {
+    margin-top: 8px; /* Adjust spacing between buttons */
+}
+
+#unlocked-cities-panel {
+    display: none; /* This hides the unlocked cities panel */
+}
+
+/* If you want the buttons to fill the width of the panel */
+#actions-panel button {
+    width: 100%;
+}
