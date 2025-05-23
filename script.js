@@ -608,7 +608,7 @@ function loadGame() {
                 }
             }
         }
-
+        
         // Update the UI to reflect the loaded day limit
         DOM.dayLimit.textContent = gameState.dayLimit === Infinity ? '∞' : gameState.dayLimit;
         
@@ -661,69 +661,6 @@ function deleteSavedGame() {
     localStorage.removeItem('dopeWarsGameSave');
     localStorage.removeItem('dopeWarsWorldMapSave');
     localStorage.removeItem('dopeWarsGameSaveTime');
-}
-
-// Add save/load/new game buttons to the UI
-function addSaveLoadButtons() {
-    // Add to the DOM cache
-    DOM.saveGameBtn = document.createElement('button');
-    DOM.saveGameBtn.id = 'save-game-btn';
-    DOM.saveGameBtn.textContent = 'Save Game';
-    DOM.saveGameBtn.className = 'action-btn';
-    
-    DOM.loadGameBtn = document.createElement('button');
-    DOM.loadGameBtn.id = 'load-game-btn';
-    DOM.loadGameBtn.textContent = 'Load Game';
-    DOM.loadGameBtn.className = 'action-btn';
-    
-    DOM.newGameBtn = document.createElement('button');
-    DOM.newGameBtn.id = 'new-game-btn';
-    DOM.newGameBtn.textContent = 'New Game';
-    DOM.newGameBtn.className = 'action-btn';
-    
-    // Get the actions panel and add buttons
-    const actionsPanel = document.getElementById('actions-panel');
-    actionsPanel.appendChild(DOM.saveGameBtn);
-    actionsPanel.appendChild(DOM.loadGameBtn);
-    actionsPanel.appendChild(DOM.newGameBtn);
-    
-    // Add event listeners
-    DOM.saveGameBtn.addEventListener('click', saveGame);
-    DOM.loadGameBtn.addEventListener('click', showLoadGameDialog);
-    DOM.newGameBtn.addEventListener('click', showNewGameDialog);
-    
-    // Add save/load buttons to the intro screen
-    addContinueButtonToIntroScreen();
-}
-
-// Function to add Continue button to intro screen
-function addContinueButtonToIntroScreen() {
-    const introOptions = document.querySelector('.game-options');
-    if (introOptions && hasSavedGame()) {
-        // Create continue game button
-        const continueBtn = document.createElement('button');
-        continueBtn.id = 'continue-game-btn';
-        continueBtn.textContent = `Continue`;
-        continueBtn.className = 'intro-btn';
-        
-        // Insert it before the start game button
-        const startBtn = document.getElementById('start-game-btn');
-        if (startBtn) {
-            introOptions.insertBefore(continueBtn, startBtn);
-            introOptions.insertBefore(document.createElement('br'), startBtn);
-        } else {
-            introOptions.appendChild(continueBtn);
-        }
-        
-        // Add event listener
-        continueBtn.addEventListener('click', () => {
-            const success = loadGame();
-            if (success) {
-                DOM.introScreen.style.display = 'none';
-                DOM.gameContainer.style.display = 'block';
-            }
-        });
-    }
 }
 
 // Show dialog confirming load saved game
@@ -1372,30 +1309,44 @@ function enhanceGameState() {
 
 // Update UI with new elements
 function updateUI() {
-    // Add Storage button to actions panel
-    const actionsPanel = document.getElementById('actions-panel');
-    if (actionsPanel) {
-        const storageBtn = document.createElement('button');
-        storageBtn.id = 'storage-btn';
-        storageBtn.textContent = 'Storage Options';
-        actionsPanel.appendChild(storageBtn);
-        
-        // Add to DOM cache
-        DOM.storageBtn = storageBtn;
-        
-        // Add event listener
-        storageBtn.addEventListener('click', showStorageOptionsModal);
+    // Check if Storage button already exists
+    const existingStorageBtn = document.getElementById('storage-btn');
+    if (!existingStorageBtn) {
+        // Add Storage button to actions panel
+        const actionsPanel = document.getElementById('actions-panel');
+        if (actionsPanel) {
+            const storageBtn = document.createElement('button');
+            storageBtn.id = 'storage-btn';
+            storageBtn.textContent = 'Storage Options';
+            actionsPanel.appendChild(storageBtn);
+            
+            // Add to DOM cache
+            DOM.storageBtn = storageBtn;
+            
+            // Add event listener
+            storageBtn.addEventListener('click', showStorageOptionsModal);
+        }
+    } else {
+        // If it exists, make sure it's in the DOM cache
+        DOM.storageBtn = existingStorageBtn;
     }
     
-    // Add Heat Level indicator to player stats
-    const playerStats = document.getElementById('player-stats');
-    if (playerStats) {
-        const heatDiv = document.createElement('div');
-        heatDiv.id = 'heat';
-        heatDiv.innerHTML = 'Heat: <span id="heat-value">0</span>';
-        playerStats.appendChild(heatDiv);
-        
-        // Update DOM cache
+    // Check if Heat Level indicator already exists
+    const existingHeatDiv = document.getElementById('heat');
+    if (!existingHeatDiv) {
+        // Add Heat Level indicator to player stats
+        const playerStats = document.getElementById('player-stats');
+        if (playerStats) {
+            const heatDiv = document.createElement('div');
+            heatDiv.id = 'heat';
+            heatDiv.innerHTML = 'Heat: <span id="heat-value">0</span>';
+            playerStats.appendChild(heatDiv);
+            
+            // Update DOM cache
+            DOM.heatValue = document.getElementById('heat-value');
+        }
+    } else {
+        // If it exists, just make sure the DOM cache is updated
         DOM.heatValue = document.getElementById('heat-value');
     }
 }
@@ -3467,4 +3418,78 @@ function addCityStyles() {
     `;
     
     document.head.appendChild(styleElement);
+}
+
+// Add save/load/new game buttons to the UI
+function addSaveLoadButtons() {
+    // Check if buttons already exist and remove them if they do
+    const existingSaveBtn = document.getElementById('save-game-btn');
+    const existingLoadBtn = document.getElementById('load-game-btn');
+    const existingNewBtn = document.getElementById('new-game-btn');
+    const existingStorageBtn = document.getElementById('storage-btn');
+    
+    if (existingSaveBtn) existingSaveBtn.remove();
+    if (existingLoadBtn) existingLoadBtn.remove();
+    if (existingNewBtn) existingNewBtn.remove();
+    if (existingStorageBtn) existingStorageBtn.remove();
+    
+    // Add to the DOM cache
+    DOM.saveGameBtn = document.createElement('button');
+    DOM.saveGameBtn.id = 'save-game-btn';
+    DOM.saveGameBtn.textContent = 'Save Game';
+    DOM.saveGameBtn.className = 'action-btn';
+    
+    DOM.loadGameBtn = document.createElement('button');
+    DOM.loadGameBtn.id = 'load-game-btn';
+    DOM.loadGameBtn.textContent = 'Load Game';
+    DOM.loadGameBtn.className = 'action-btn';
+    
+    DOM.newGameBtn = document.createElement('button');
+    DOM.newGameBtn.id = 'new-game-btn';
+    DOM.newGameBtn.textContent = 'New Game';
+    DOM.newGameBtn.className = 'action-btn';
+    
+    // Get the actions panel and add buttons
+    const actionsPanel = document.getElementById('actions-panel');
+    actionsPanel.appendChild(DOM.saveGameBtn);
+    actionsPanel.appendChild(DOM.loadGameBtn);
+    actionsPanel.appendChild(DOM.newGameBtn);
+    
+    // Add event listeners
+    DOM.saveGameBtn.addEventListener('click', saveGame);
+    DOM.loadGameBtn.addEventListener('click', showLoadGameDialog);
+    DOM.newGameBtn.addEventListener('click', showNewGameDialog);
+    
+    // Add save/load buttons to the intro screen
+    addContinueButtonToIntroScreen();
+}
+
+// Function to add Continue button to intro screen
+function addContinueButtonToIntroScreen() {
+    const introOptions = document.querySelector('.game-options');
+    if (introOptions && hasSavedGame()) {
+        // Create continue game button
+        const continueBtn = document.createElement('button');
+        continueBtn.id = 'continue-game-btn';
+        continueBtn.textContent = 'Continue Game'; // Simplified text
+        continueBtn.className = 'intro-btn';
+        
+        // Insert it before the start game button
+        const startBtn = document.getElementById('start-game-btn');
+        if (startBtn) {
+            introOptions.insertBefore(continueBtn, startBtn);
+            introOptions.insertBefore(document.createElement('br'), startBtn);
+        } else {
+            introOptions.appendChild(continueBtn);
+        }
+        
+        // Add event listener
+        continueBtn.addEventListener('click', () => {
+            const success = loadGame();
+            if (success) {
+                DOM.introScreen.style.display = 'none';
+                DOM.gameContainer.style.display = 'block';
+            }
+        });
+    }
 }
