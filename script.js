@@ -608,6 +608,24 @@ function loadGame() {
                 }
             }
         }
+
+        // Update the UI to reflect the loaded day limit
+        DOM.dayLimit.textContent = gameState.dayLimit === Infinity ? '∞' : gameState.dayLimit;
+        
+        // If we have the game days dropdown, update its selected value to match the saved day limit
+        if (DOM.gameDays) {
+            if (gameState.dayLimit === Infinity) {
+                DOM.gameDays.value = 'infinite';
+            } else {
+                // Try to find a matching option, or default to the closest one
+                const options = Array.from(DOM.gameDays.options).map(opt => parseInt(opt.value) || 'infinite');
+                const exactMatch = options.includes(gameState.dayLimit);
+                if (exactMatch) {
+                    DOM.gameDays.value = gameState.dayLimit.toString();
+                }
+                // If no exact match, we'll just leave it as is since it's not currently visible
+            }
+        }
         
         // Update all game displays
         updatePlayerStats();
@@ -685,7 +703,7 @@ function addContinueButtonToIntroScreen() {
         // Create continue game button
         const continueBtn = document.createElement('button');
         continueBtn.id = 'continue-game-btn';
-        continueBtn.textContent = `Continue Saved Game (${getSaveGameTime()})`;
+        continueBtn.textContent = `Continue`;
         continueBtn.className = 'intro-btn';
         
         // Insert it before the start game button
@@ -1140,7 +1158,10 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Set up event listeners
     setupEventListeners();
-    
+
+    // Add Continue button to intro screen if saved game exists
+    addContinueButtonToIntroScreen();    
+
     // Show intro screen first
     DOM.introScreen.style.display = 'flex';
     DOM.gameContainer.style.display = 'none';
